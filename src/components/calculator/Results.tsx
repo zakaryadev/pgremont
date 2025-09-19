@@ -54,11 +54,6 @@ export function Results({ results }: ResultsProps) {
         </div>
         
         <div className="flex justify-between items-center">
-          <span className="text-muted-foreground">Bosma narxi:</span>
-          <span className="font-semibold">{formatCurrency(results.printCost)}</span>
-        </div>
-        
-        <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Xizmat narxi:</span>
           <span className="font-semibold">{formatCurrency(results.serviceCost)}</span>
         </div>

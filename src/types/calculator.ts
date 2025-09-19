@@ -1,8 +1,7 @@
 export interface Material {
   name: string;
   widths: number[];
-  materialPrice: number;
-  printPrice: number;
+  price: number;
 }
 
 export interface Service {

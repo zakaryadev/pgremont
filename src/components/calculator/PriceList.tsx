@@ -4,9 +4,9 @@ import { Label } from "../ui/label";
 import { Separator } from "../ui/separator";
 
 interface PriceListProps {
-  materials: Record<string, { name: string; materialPrice: number; printPrice: number }>;
+  materials: Record<string, { name: string; price: number }>;
   services: Record<string, { name: string; price: number; type: string }>;
-  onUpdateMaterialPrice: (materialKey: string, field: 'materialPrice' | 'printPrice', value: number) => void;
+  onUpdateMaterialPrice: (materialKey: string, value: number) => void;
   onUpdateServicePrice: (serviceKey: string, value: number) => void;
 }
 
@@ -26,22 +26,13 @@ export function PriceList({
             <Label className="text-sm font-medium min-w-0 flex-1">
               {material.name} (m²):
             </Label>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                value={material.materialPrice}
-                onChange={(e) => onUpdateMaterialPrice(key, 'materialPrice', parseFloat(e.target.value))}
-                className="w-24 text-right"
-                placeholder="Material"
-              />
-              <Input
-                type="number"
-                value={material.printPrice}
-                onChange={(e) => onUpdateMaterialPrice(key, 'printPrice', parseFloat(e.target.value))}
-                className="w-24 text-right"
-                placeholder="Bosma"
-              />
-            </div>
+            <Input
+              type="number"
+              value={material.price}
+              onChange={(e) => onUpdateMaterialPrice(key, parseFloat(e.target.value))}
+              className="w-24 text-right"
+              placeholder="Narx"
+            />
           </div>
         ))}
         

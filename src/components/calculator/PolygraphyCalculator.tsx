@@ -58,13 +58,13 @@ export function PolygraphyCalculator() {
     }));
   };
 
-  const updateMaterialPrice = (materialKey: string, field: 'materialPrice' | 'printPrice', value: number) => {
+  const updateMaterialPrice = (materialKey: string, value: number) => {
     if (isNaN(value)) return;
     setMaterials(prev => ({
       ...prev,
       [materialKey]: {
         ...prev[materialKey],
-        [field]: value,
+        price: value,
       }
     }));
   };
@@ -92,8 +92,8 @@ export function PolygraphyCalculator() {
     const totalWaste = totalMaterialUsed - totalPrintArea;
     const wastePercentage = totalMaterialUsed > 0 ? (totalWaste / totalMaterialUsed) * 100 : 0;
 
-    const materialCost = totalMaterialUsed * currentMaterial.materialPrice;
-    const printCost = totalPrintArea * currentMaterial.printPrice;
+    const materialCost = totalPrintArea * currentMaterial.price;
+    const printCost = 0;
 
     const currentService = services[state.selectedService];
     let serviceCost = 0;
