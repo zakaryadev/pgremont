@@ -12,6 +12,7 @@ interface ItemFormProps {
 }
 
 export function ItemForm({ selectedWidth, onAddItem }: ItemFormProps) {
+  const [name, setName] = useState<string>("");
   const [width, setWidth] = useState<string>("");
   const [height, setHeight] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("1");
@@ -24,7 +25,7 @@ export function ItemForm({ selectedWidth, onAddItem }: ItemFormProps) {
     const itemHeight = parseFloat(height);
     const itemQuantity = parseInt(quantity);
 
-    if (isNaN(itemWidth) || isNaN(itemHeight) || isNaN(itemQuantity) || 
+    if (!name.trim() || isNaN(itemWidth) || isNaN(itemHeight) || isNaN(itemQuantity) || 
         itemWidth <= 0 || itemHeight <= 0 || itemQuantity <= 0) {
       toast({
         title: "Xato",
@@ -44,11 +45,15 @@ export function ItemForm({ selectedWidth, onAddItem }: ItemFormProps) {
     }
 
     onAddItem({ 
+      id: Date.now().toString(),
+      name: name.trim(),
       width: itemWidth, 
       height: itemHeight, 
-      quantity: itemQuantity 
+      quantity: itemQuantity,
+      isVisible: true
     });
     
+    setName("");
     setWidth("");
     setHeight("");
     setQuantity("1");
@@ -63,6 +68,20 @@ export function ItemForm({ selectedWidth, onAddItem }: ItemFormProps) {
     <Card className="p-6 bg-gradient-to-br from-card to-muted/20">
       <h2 className="text-xl font-semibold mb-4 text-foreground">3. Yangi ish qo'shish</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <Label htmlFor="item-name" className="text-sm font-medium text-muted-foreground">
+            Mahsulot nomi
+          </Label>
+          <Input
+            id="item-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Masalan: Reklama banneri, Ofis yozuvi..."
+            className="mt-1"
+            required
+          />
+        </div>
         <div>
           <Label htmlFor="item-width" className="text-sm font-medium text-muted-foreground">
             Ishning eni (m)

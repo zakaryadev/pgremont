@@ -3,17 +3,17 @@ import { Material, Service } from '../types/calculator';
 export const materials: Record<string, Material> = {
   banner: { 
     name: 'Баннер', 
-    widths: [3.2, 2.6, 2.2, 1.8, 1.6], 
+    widths: [3.2, 2.6, 2.2, 1.8, 1.6, 1.3, 1.1], 
     price: 55000
   },
   oracal: { 
-    name: 'Аракал', 
+    name: 'Оракал', 
     widths: [1.52, 1.27, 1.07], 
     price: 85000
   },
   setka: { 
     name: 'Сетка', 
-    widths: [3.2, 2.2, 1.6], 
+    widths: [1.52, 1.27, 1.07], 
     price: 75000
   },
   prozrachka: { 
@@ -36,17 +36,17 @@ export const services: Record<string, Service> = {
   },
   install: { 
     name: 'Установка', 
-    price: 15000, 
+    price: 25000, 
     type: 'per_sqm' 
   },
   install_rails: { 
     name: 'Установка с рейками', 
-    price: 25000, 
+    price: 55000, 
     type: 'per_sqm' 
   },
   install_dismantle: { 
     name: 'Установка + Демонтаж', 
-    price: 30000, 
+    price: 60000, 
     type: 'per_sqm' 
   },
 };

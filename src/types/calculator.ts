@@ -11,9 +11,12 @@ export interface Service {
 }
 
 export interface Item {
+  id: string;
+  name: string;
   width: number;
   height: number;
   quantity: number;
+  isVisible: boolean;
 }
 
 export interface CalculatorState {
@@ -32,4 +35,18 @@ export interface CalculationResults {
   printCost: number;
   serviceCost: number;
   totalCost: number;
+}
+
+export interface Order {
+  id: string;
+  name: string;
+  createdAt: Date;
+  state: CalculatorState;
+  results: CalculationResults;
+  materials: Record<string, Material>;
+  services: Record<string, Service>;
+}
+
+export interface ServiceVisibility {
+  [serviceKey: string]: boolean;
 }
