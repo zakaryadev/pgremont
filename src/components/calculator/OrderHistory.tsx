@@ -187,7 +187,7 @@ export function OrderHistory({ onLoadOrder }: OrderHistoryProps) {
                         <div className="space-y-1">
                           <p className="text-muted-foreground">Jami narx</p>
                           <p className="font-medium text-primary flex items-center">
-                            <DollarSign className="h-4 w-4 mr-1" />
+                            {/* <DollarSign className="h-4 w-4 mr-1" /> */}
                             {formatCurrency(order.results.totalCost)}
                           </p>
                         </div>
