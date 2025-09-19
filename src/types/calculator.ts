@@ -17,6 +17,8 @@ export interface Item {
   height: number;
   quantity: number;
   isVisible: boolean;
+  materialWidth: number;
+  materialPrice: number;
 }
 
 export interface CalculatorState {

@@ -55,9 +55,21 @@ export function PolygraphyCalculator() {
   };
 
   const addItem = (item: Item) => {
+    // Auto-generate product name with material name and width
+    const materialName = currentMaterial.name;
+    const autoName = `${materialName} (${item.materialWidth}m)`;
+    
+    // Use provided name or auto-generate
+    const finalName = item.name.trim() || autoName;
+    
+    const itemWithAutoName = {
+      ...item,
+      name: finalName
+    };
+    
     setState(prev => ({
       ...prev,
-      items: [...prev.items, item],
+      items: [...prev.items, itemWithAutoName],
     }));
   };
 
@@ -141,11 +153,13 @@ export function PolygraphyCalculator() {
 
     // Only calculate for visible items
     state.items.filter(item => item.isVisible).forEach(item => {
+      // Pechat maydoni = item eni × item bo'yi × soni
       totalPrintArea += item.width * item.height * item.quantity;
-      totalMaterialUsed += state.selectedWidth * item.height * item.quantity;
+      // Material sarfi = har bir item uchun o'z material eni × item bo'yi × soni
+      totalMaterialUsed += item.materialWidth * item.height * item.quantity;
     });
 
-    const totalWaste = totalMaterialUsed - totalPrintArea;
+    const totalWaste = Math.abs(totalMaterialUsed - totalPrintArea);
     const wastePercentage = totalMaterialUsed > 0 ? (totalWaste / totalMaterialUsed) * 100 : 0;
 
     const materialCost = totalPrintArea * currentMaterial.price;
@@ -209,6 +223,7 @@ export function PolygraphyCalculator() {
 
             <ItemForm
               selectedWidth={state.selectedWidth}
+              materialPrice={currentMaterial.price}
               onAddItem={addItem}
             />
 
@@ -252,7 +267,12 @@ export function PolygraphyCalculator() {
                 onUpdateServicePrice={updateServicePrice}
               />
 
-              <Results results={results} />
+              <Results 
+                results={results} 
+                items={state.items} 
+                materialPrice={currentMaterial.price}
+                materials={materials}
+              />
             </div>
 
             <OrderHistory onLoadOrder={handleLoadOrder} />

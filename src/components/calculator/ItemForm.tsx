@@ -8,10 +8,11 @@ import { useToast } from "../../hooks/use-toast";
 
 interface ItemFormProps {
   selectedWidth: number;
+  materialPrice: number;
   onAddItem: (item: Item) => void;
 }
 
-export function ItemForm({ selectedWidth, onAddItem }: ItemFormProps) {
+export function ItemForm({ selectedWidth, materialPrice, onAddItem }: ItemFormProps) {
   const [name, setName] = useState<string>("");
   const [width, setWidth] = useState<string>("");
   const [height, setHeight] = useState<string>("");
@@ -25,7 +26,7 @@ export function ItemForm({ selectedWidth, onAddItem }: ItemFormProps) {
     const itemHeight = parseFloat(height);
     const itemQuantity = parseInt(quantity);
 
-    if (!name.trim() || isNaN(itemWidth) || isNaN(itemHeight) || isNaN(itemQuantity) || 
+    if (isNaN(itemWidth) || isNaN(itemHeight) || isNaN(itemQuantity) || 
         itemWidth <= 0 || itemHeight <= 0 || itemQuantity <= 0) {
       toast({
         title: "Xato",
@@ -44,13 +45,18 @@ export function ItemForm({ selectedWidth, onAddItem }: ItemFormProps) {
       return;
     }
 
+    // Auto-generate product name
+    const productName = name.trim() || `Mahsulot (${selectedWidth}m)`;
+    
     onAddItem({ 
       id: Date.now().toString(),
-      name: name.trim(),
+      name: productName,
       width: itemWidth, 
       height: itemHeight, 
       quantity: itemQuantity,
-      isVisible: true
+      isVisible: true,
+      materialWidth: selectedWidth,
+      materialPrice: materialPrice
     });
     
     setName("");
@@ -77,9 +83,8 @@ export function ItemForm({ selectedWidth, onAddItem }: ItemFormProps) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Masalan: Reklama banneri, Ofis yozuvi..."
+            placeholder="Ixtiyoriy (avtomatik qo'shiladi)"
             className="mt-1"
-            required
           />
         </div>
         <div>
