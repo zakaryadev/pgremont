@@ -64,8 +64,16 @@ export function OrderHistory({ onLoadOrder }: OrderHistoryProps) {
     setIsOpen(false);
   };
 
+  // Refresh orders when dialog opens
+  const handleDialogOpen = (open: boolean) => {
+    setIsOpen(open);
+    if (open) {
+      refreshOrders();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleDialogOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full">
           <Eye className="h-4 w-4 mr-2" />

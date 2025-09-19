@@ -33,6 +33,7 @@ export interface CalculationResults {
   wastePercentage: number;
   materialCost: number;
   printCost: number;
+  wasteCost: number;
   serviceCost: number;
   totalCost: number;
 }

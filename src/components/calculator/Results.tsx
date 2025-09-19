@@ -49,8 +49,13 @@ export function Results({ results }: ResultsProps) {
         <Separator className="my-4" />
         
         <div className="flex justify-between items-center">
-          <span className="text-muted-foreground">Material narxi:</span>
+          <span className="text-muted-foreground">Pechat material narxi:</span>
           <span className="font-semibold">{formatCurrency(results.materialCost)}</span>
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <span className="text-destructive font-medium">Chiqindi narxi:</span>
+          <span className="font-semibold text-destructive">{formatCurrency(results.wasteCost)}</span>
         </div>
         
         <div className="flex justify-between items-center">

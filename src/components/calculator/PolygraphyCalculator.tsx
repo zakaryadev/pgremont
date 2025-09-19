@@ -79,6 +79,7 @@ export function PolygraphyCalculator() {
     }));
   };
 
+
   const updateServicePrice = (serviceKey: string, value: number) => {
     if (isNaN(value)) return;
     setServices(prev => ({
@@ -148,6 +149,7 @@ export function PolygraphyCalculator() {
     const wastePercentage = totalMaterialUsed > 0 ? (totalWaste / totalMaterialUsed) * 100 : 0;
 
     const materialCost = totalPrintArea * currentMaterial.price;
+    const wasteCost = totalWaste * currentMaterial.price;
     const printCost = 0;
 
     const currentService = services[state.selectedService];
@@ -163,7 +165,7 @@ export function PolygraphyCalculator() {
       }
     }
 
-    const totalCost = materialCost + printCost + serviceCost;
+    const totalCost = materialCost + printCost + wasteCost + serviceCost;
 
     return {
       totalPrintArea,
@@ -172,6 +174,7 @@ export function PolygraphyCalculator() {
       wastePercentage,
       materialCost,
       printCost,
+      wasteCost,
       serviceCost,
       totalCost,
     };
