@@ -12,13 +12,18 @@ import { useOrders } from '../../hooks/useOrders';
 
 interface OrderHistoryProps {
   onLoadOrder?: (order: Order) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function OrderHistory({ onLoadOrder }: OrderHistoryProps) {
+export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose }: OrderHistoryProps) {
   const { orders, loading, error, deleteOrder, clearAllOrders, refreshOrders } = useOrders();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
+
+  // Use external isOpen if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('uz-UZ', {
@@ -61,14 +66,26 @@ export function OrderHistory({ onLoadOrder }: OrderHistoryProps) {
     if (onLoadOrder) {
       onLoadOrder(order);
     }
-    setIsOpen(false);
+    if (onClose) {
+      onClose();
+    } else {
+      setInternalIsOpen(false);
+    }
   };
 
   // Refresh orders when dialog opens
   const handleDialogOpen = (open: boolean) => {
-    setIsOpen(open);
-    if (open) {
-      refreshOrders();
+    if (onClose) {
+      if (open) {
+        refreshOrders();
+      } else {
+        onClose();
+      }
+    } else {
+      setInternalIsOpen(open);
+      if (open) {
+        refreshOrders();
+      }
     }
   };
 

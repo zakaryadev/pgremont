@@ -19,6 +19,7 @@ export function PolygraphyCalculator() {
   const [materials, setMaterials] = useState(initialMaterials);
   const [services, setServices] = useState(initialServices);
   const [serviceVisibility, setServiceVisibility] = useState<ServiceVisibility>({});
+  const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [state, setState] = useState<CalculatorState>({
     items: [],
     selectedMaterial: 'banner',
@@ -246,7 +247,7 @@ export function PolygraphyCalculator() {
 
             <OrderForm
               onSaveOrder={handleSaveOrder}
-              onShowHistory={() => {}} // Will be handled by OrderHistory component
+              onShowHistory={() => setShowOrderHistory(true)}
               disabled={state.items.length === 0}
             />
           </div>
@@ -275,7 +276,11 @@ export function PolygraphyCalculator() {
               />
             </div>
 
-            <OrderHistory onLoadOrder={handleLoadOrder} />
+            <OrderHistory 
+              onLoadOrder={handleLoadOrder}
+              isOpen={showOrderHistory}
+              onClose={() => setShowOrderHistory(false)}
+            />
           </div>
         </div>
       </div>
