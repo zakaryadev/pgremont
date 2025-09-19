@@ -1,74 +1,151 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Order, CalculatorState, CalculationResults, Material, Service } from '../types/calculator';
-
-const STORAGE_KEY = 'printpro-orders';
+import { supabase } from '../integrations/supabase/client';
 
 export function useOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load orders from localStorage on mount
+  // Load orders from Supabase on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsedOrders = JSON.parse(stored).map((order: any) => ({
-          ...order,
-          createdAt: new Date(order.createdAt)
-        }));
-        setOrders(parsedOrders);
-      }
-    } catch (error) {
-      console.error('Failed to load orders from localStorage:', error);
-    }
+    loadOrders();
   }, []);
 
-  // Save orders to localStorage whenever orders change
-  useEffect(() => {
+  const loadOrders = async () => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-    } catch (error) {
-      console.error('Failed to save orders to localStorage:', error);
-    }
-  }, [orders]);
+      setLoading(true);
+      setError(null);
+      
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  const saveOrder = useCallback((
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      const formattedOrders: Order[] = (data || []).map((order: any) => ({
+        id: order.id,
+        name: order.name,
+        createdAt: new Date(order.created_at),
+        state: order.state,
+        results: order.results,
+        materials: order.materials,
+        services: order.services
+      }));
+
+      setOrders(formattedOrders);
+    } catch (err) {
+      console.error('Failed to load orders from Supabase:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveOrder = useCallback(async (
     name: string,
     state: CalculatorState,
     results: CalculationResults,
     materials: Record<string, Material>,
     services: Record<string, Service>
   ) => {
-    const newOrder: Order = {
-      id: Date.now().toString(),
-      name,
-      createdAt: new Date(),
-      state,
-      results,
-      materials,
-      services
-    };
+    try {
+      setError(null);
+      
+      const orderData = {
+        name,
+        state,
+        results,
+        materials,
+        services
+      };
 
-    setOrders(prev => [newOrder, ...prev]);
-    return newOrder;
+      const { data, error: insertError } = await supabase
+        .from('orders')
+        .insert([orderData])
+        .select()
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      const newOrder: Order = {
+        id: data.id,
+        name: data.name,
+        createdAt: new Date(data.created_at),
+        state: data.state,
+        results: data.results,
+        materials: data.materials,
+        services: data.services
+      };
+
+      setOrders(prev => [newOrder, ...prev]);
+      return newOrder;
+    } catch (err) {
+      console.error('Failed to save order to Supabase:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save order');
+      throw err;
+    }
   }, []);
 
-  const deleteOrder = useCallback((orderId: string) => {
-    setOrders(prev => prev.filter(order => order.id !== orderId));
+  const deleteOrder = useCallback(async (orderId: string) => {
+    try {
+      setError(null);
+      
+      const { error: deleteError } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      setOrders(prev => prev.filter(order => order.id !== orderId));
+    } catch (err) {
+      console.error('Failed to delete order from Supabase:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete order');
+      throw err;
+    }
   }, []);
 
   const loadOrder = useCallback((orderId: string) => {
     return orders.find(order => order.id === orderId);
   }, [orders]);
 
-  const clearAllOrders = useCallback(() => {
-    setOrders([]);
+  const clearAllOrders = useCallback(async () => {
+    try {
+      setError(null);
+      
+      const { error: deleteError } = await supabase
+        .from('orders')
+        .delete()
+        .neq('id', ''); // Delete all records
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      setOrders([]);
+    } catch (err) {
+      console.error('Failed to clear all orders from Supabase:', err);
+      setError(err instanceof Error ? err.message : 'Failed to clear all orders');
+      throw err;
+    }
   }, []);
 
   return {
     orders,
+    loading,
+    error,
     saveOrder,
     deleteOrder,
     loadOrder,
-    clearAllOrders
+    clearAllOrders,
+    refreshOrders: loadOrders
   };
 }

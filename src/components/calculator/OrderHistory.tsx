@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, Calendar, DollarSign, Package, Eye } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Trash2, Calendar, DollarSign, Package, Eye, Loader2, AlertCircle } from 'lucide-react';
 import { Order } from '../../types/calculator';
 import { useOrders } from '../../hooks/useOrders';
 
@@ -14,8 +15,10 @@ interface OrderHistoryProps {
 }
 
 export function OrderHistory({ onLoadOrder }: OrderHistoryProps) {
-  const { orders, deleteOrder, clearAllOrders } = useOrders();
+  const { orders, loading, error, deleteOrder, clearAllOrders, refreshOrders } = useOrders();
   const [isOpen, setIsOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('uz-UZ', {
@@ -31,9 +34,27 @@ export function OrderHistory({ onLoadOrder }: OrderHistoryProps) {
     return new Intl.NumberFormat('uz-UZ').format(amount) + ' so\'m';
   };
 
-  const handleDeleteOrder = (orderId: string, e: React.MouseEvent) => {
+  const handleDeleteOrder = async (orderId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    deleteOrder(orderId);
+    try {
+      setDeletingId(orderId);
+      await deleteOrder(orderId);
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleClearAllOrders = async () => {
+    try {
+      setClearing(true);
+      await clearAllOrders();
+    } catch (error) {
+      console.error('Failed to clear all orders:', error);
+    } finally {
+      setClearing(false);
+    }
   };
 
   const handleLoadOrder = (order: Order) => {
@@ -60,6 +81,23 @@ export function OrderHistory({ onLoadOrder }: OrderHistoryProps) {
         </DialogHeader>
         
         <div className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {error}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={refreshOrders}
+                  className="ml-2"
+                >
+                  Qayta urinish
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {orders.length > 0 && (
             <div className="flex justify-between items-center">
               <Badge variant="secondary">
@@ -68,16 +106,26 @@ export function OrderHistory({ onLoadOrder }: OrderHistoryProps) {
               <Button 
                 variant="destructive" 
                 size="sm"
-                onClick={clearAllOrders}
+                onClick={handleClearAllOrders}
+                disabled={clearing}
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                {clearing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
                 Barchasini o'chirish
               </Button>
             </div>
           )}
 
           <ScrollArea className="h-[400px]">
-            {orders.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin" />
+                <p>Buyurtmalar yuklanmoqda...</p>
+              </div>
+            ) : orders.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Hali hech qanday buyurtma saqlanmagan</p>
@@ -104,8 +152,13 @@ export function OrderHistory({ onLoadOrder }: OrderHistoryProps) {
                           size="sm"
                           onClick={(e) => handleDeleteOrder(order.id, e)}
                           className="text-destructive hover:text-destructive"
+                          disabled={deletingId === order.id}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {deletingId === order.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </CardHeader>

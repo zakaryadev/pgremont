@@ -108,9 +108,9 @@ export function PolygraphyCalculator() {
     }));
   };
 
-  const handleSaveOrder = (orderName: string) => {
+  const handleSaveOrder = async (orderName: string) => {
     try {
-      saveOrder(orderName, state, results, materials, services);
+      await saveOrder(orderName, state, results, materials, services);
       toast({
         title: "Buyurtma saqlandi",
         description: `"${orderName}" nomli buyurtma muvaffaqiyatli saqlandi`,
