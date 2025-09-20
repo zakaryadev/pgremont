@@ -6,18 +6,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Save, History } from 'lucide-react';
 
 interface OrderFormProps {
-  onSaveOrder: (name: string) => void;
+  onSaveOrder: (name: string, phone?: string) => void;
   onShowHistory: () => void;
   disabled?: boolean;
 }
 
 export function OrderForm({ onSaveOrder, onShowHistory, disabled }: OrderFormProps) {
   const [orderName, setOrderName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   const handleSave = () => {
     if (orderName.trim()) {
-      onSaveOrder(orderName.trim());
+      onSaveOrder(orderName.trim(), phoneNumber.trim() || undefined);
       setOrderName('');
+      setPhoneNumber('');
     }
   };
 
@@ -46,6 +48,17 @@ export function OrderForm({ onSaveOrder, onShowHistory, disabled }: OrderFormPro
             placeholder="Masalan: Reklama banneri, Ofis yozuvlari..."
             value={orderName}
             onChange={(e) => setOrderName(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="phone-number">Telefon raqami (ixtiyoriy)</Label>
+          <Input
+            id="phone-number"
+            placeholder="+998 90 123 45 67"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
             onKeyPress={handleKeyPress}
             disabled={disabled}
           />

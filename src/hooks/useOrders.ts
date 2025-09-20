@@ -29,6 +29,7 @@ export function useOrders() {
       const formattedOrders: Order[] = (data || []).map((order: any) => ({
         id: order.id,
         name: order.name,
+        phone: order.phone || undefined,
         createdAt: new Date(order.created_at),
         state: order.state,
         results: order.results,
@@ -50,7 +51,8 @@ export function useOrders() {
     state: CalculatorState,
     results: CalculationResults,
     materials: Record<string, Material>,
-    services: Record<string, Service>
+    services: Record<string, Service>,
+    phone?: string
   ) => {
     try {
       setError(null);
@@ -76,6 +78,7 @@ export function useOrders() {
       const newOrder: Order = {
         id: data.id,
         name: data.name,
+        phone: data.phone || undefined,
         createdAt: new Date(data.created_at),
         state: data.state,
         results: data.results,

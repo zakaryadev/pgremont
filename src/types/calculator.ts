@@ -43,6 +43,7 @@ export interface CalculationResults {
 export interface Order {
   id: string;
   name: string;
+  phone?: string;
   createdAt: Date;
   state: CalculatorState;
   results: CalculationResults;

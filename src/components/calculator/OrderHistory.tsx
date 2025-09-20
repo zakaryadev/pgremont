@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -6,7 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Trash2, Calendar, DollarSign, Package, Eye, Loader2, AlertCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Trash2, Calendar, DollarSign, Package, Eye, Loader2, AlertCircle, Phone, Filter, X } from 'lucide-react';
 import { Order } from '../../types/calculator';
 import { useOrders } from '../../hooks/useOrders';
 
@@ -21,6 +24,9 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose }: O
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   // Use external isOpen if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -37,6 +43,46 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose }: O
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('uz-UZ').format(amount) + ' so\'m';
+  };
+
+  // Filter orders based on date selection
+  const filteredOrders = useMemo(() => {
+    if (dateFilter === 'all') return orders;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.createdAt);
+      const orderDateOnly = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
+
+      switch (dateFilter) {
+        case 'today':
+          return orderDateOnly.getTime() === today.getTime();
+        case 'week':
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return orderDateOnly >= weekAgo;
+        case 'month':
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return orderDateOnly >= monthAgo;
+        case 'custom':
+          if (!customStartDate || !customEndDate) return true;
+          const startDate = new Date(customStartDate);
+          const endDate = new Date(customEndDate);
+          endDate.setHours(23, 59, 59, 999); // Include the entire end date
+          return orderDate >= startDate && orderDate <= endDate;
+        default:
+          return true;
+      }
+    });
+  }, [orders, dateFilter, customStartDate, customEndDate]);
+
+  const clearFilters = () => {
+    setDateFilter('all');
+    setCustomStartDate('');
+    setCustomEndDate('');
   };
 
   const handleDeleteOrder = async (orderId: string, e: React.MouseEvent) => {
@@ -91,12 +137,6 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose }: O
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">
-          <Eye className="h-4 w-4 mr-2" />
-          Buyurtmalar tarixi
-        </Button>
-      </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Buyurtmalar tarixi</DialogTitle>
@@ -123,11 +163,83 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose }: O
             </Alert>
           )}
 
+          {/* Filter Controls */}
+          {orders.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  Filtrlash
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="date-filter">Sana bo'yicha</Label>
+                    <Select value={dateFilter} onValueChange={(value: any) => setDateFilter(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sana tanlang" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Barcha buyurtmalar</SelectItem>
+                        <SelectItem value="today">Bugun</SelectItem>
+                        <SelectItem value="week">Oxirgi hafta</SelectItem>
+                        <SelectItem value="month">Oxirgi oy</SelectItem>
+                        <SelectItem value="custom">Maxsus sana</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {dateFilter === 'custom' && (
+                    <div className="space-y-2">
+                      <Label>Maxsus sana oralig'i</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                          placeholder="Boshlanish sanasi"
+                        />
+                        <Input
+                          type="date"
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                          placeholder="Tugash sanasi"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {dateFilter !== 'all' && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="flex items-center gap-2"
+                    >
+                      <X className="h-4 w-4" />
+                      Filtrlarni tozalash
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {orders.length > 0 && (
             <div className="flex justify-between items-center">
-              <Badge variant="secondary">
-                Jami: {orders.length} ta buyurtma
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">
+                  Jami: {orders.length} ta buyurtma
+                </Badge>
+                {filteredOrders.length !== orders.length && (
+                  <Badge variant="outline">
+                    Ko'rsatilmoqda: {filteredOrders.length} ta
+                  </Badge>
+                )}
+              </div>
               <Button 
                 variant="destructive" 
                 size="sm"
@@ -155,9 +267,22 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose }: O
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Hali hech qanday buyurtma saqlanmagan</p>
               </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Tanlangan filtrlarda buyurtma topilmadi</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="mt-2"
+                >
+                  Filtrlarni tozalash
+                </Button>
+              </div>
             ) : (
               <div className="space-y-3">
-                {orders.map((order) => (
+                {filteredOrders.map((order) => (
                   <Card 
                     key={order.id} 
                     className="cursor-pointer hover:shadow-md transition-shadow"
@@ -167,9 +292,17 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose }: O
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
                           <CardTitle className="text-lg">{order.name}</CardTitle>
-                          <CardDescription className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            {formatDate(order.createdAt)}
+                          <CardDescription className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              {formatDate(order.createdAt)}
+                            </div>
+                            {order.phone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-4 w-4" />
+                                {order.phone}
+                              </div>
+                            )}
                           </CardDescription>
                         </div>
                         <Button
