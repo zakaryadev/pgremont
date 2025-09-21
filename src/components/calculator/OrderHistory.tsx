@@ -44,13 +44,40 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   }, [refreshTrigger]); // Remove refreshOrders from dependencies
 
   const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('uz-UZ', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const orderDate = new Date(date);
+    const orderDateOnly = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
+    
+    // Agar bugun bo'lsa
+    if (orderDateOnly.getTime() === today.getTime()) {
+      return `Bugun, ${orderDate.toLocaleTimeString('uz-UZ', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })}`;
+    }
+    
+    // Agar kecha bo'lsa
+    if (orderDateOnly.getTime() === yesterday.getTime()) {
+      return `Kecha, ${orderDate.toLocaleTimeString('uz-UZ', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })}`;
+    }
+    
+    // Boshqa hollarda to'liq sana - O'zbek tilida tushunarli format
+    const day = orderDate.getDate();
+    const month = orderDate.toLocaleDateString('uz-UZ', { month: 'long' });
+    const year = orderDate.getFullYear();
+    const time = orderDate.toLocaleTimeString('uz-UZ', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    return `${day} ${month} ${year}, ${time}`;
   };
 
   const formatCurrency = (amount: number) => {
