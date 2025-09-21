@@ -7,7 +7,7 @@ interface ResultsProps {
   results: CalculationResults;
   items: Item[];
   materialPrice: number;
-  materials: Record<string, { name: string; price: number }>;
+  materials: Record<string, { name: string; price: number; wastePrice: number }>;
 }
 
 export function Results({ results, items, materialPrice, materials }: ResultsProps) {
@@ -28,6 +28,14 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
     return item.materialPrice;
   };
 
+  // Get material waste price for specific item
+  const getItemMaterialWastePrice = (item: Item) => {
+    // Find material by name and get waste price
+    const materialName = item.name.split(' ')[0]; // Get material name from item name
+    const material = Object.values(materials).find(m => m.name === materialName);
+    return material?.wastePrice || 0;
+  };
+
   // Calculate individual item details
   const getItemDetails = (item: Item, itemMaterialPrice: number) => {
     const printArea = item.width * item.height * item.quantity;
@@ -35,7 +43,8 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
     const waste = Math.abs(materialUsed - printArea);
     const wastePercentage = materialUsed > 0 ? (waste / materialUsed) * 100 : 0;
     const printCost = printArea * itemMaterialPrice;
-    const wasteCost = waste * itemMaterialPrice;
+    const wastePrice = getItemMaterialWastePrice(item);
+    const wasteCost = waste * wastePrice;
     const totalCost = printCost + wasteCost;
 
     return {
@@ -46,7 +55,8 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
       printCost,
       wasteCost,
       totalCost,
-      materialPrice: itemMaterialPrice
+      materialPrice: itemMaterialPrice,
+      wastePrice: wastePrice
     };
   };
 
@@ -63,7 +73,7 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
             <div key={item.id} className="border rounded-lg p-3 bg-muted/20">
               <div className="flex justify-between items-center mb-2">
                 <span className="font-medium text-sm">{item.name}</span>
-                <Badge variant="outline">{formatArea(details.totalCost / itemMaterialPrice)}</Badge>
+                <Badge variant="outline">{formatArea(details.printArea)}</Badge>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="flex justify-between">
@@ -106,20 +116,20 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
           items.filter(item => item.isVisible).forEach(item => {
             const itemMaterialPrice = getItemMaterialPrice(item);
             const details = getItemDetails(item, itemMaterialPrice);
-            const materialKey = `${item.name.split(' (')[0]} (${item.materialWidth}m)`;
+            const materialKey = `${item.name.split(' ')[0]} (${item.materialWidth}m)`;
             
             if (materialWasteMap.has(materialKey)) {
               const existing = materialWasteMap.get(materialKey);
               materialWasteMap.set(materialKey, {
                 waste: existing.waste + details.waste,
                 wasteCost: existing.wasteCost + details.wasteCost,
-                materialPrice: itemMaterialPrice
+                wastePrice: details.wastePrice
               });
             } else {
               materialWasteMap.set(materialKey, {
                 waste: details.waste,
                 wasteCost: details.wasteCost,
-                materialPrice: itemMaterialPrice
+                wastePrice: details.wastePrice
               });
             }
           });

@@ -125,13 +125,25 @@ export function useOrders() {
     try {
       setError(null);
       
-      const { error: deleteError } = await supabase
+      // First, get all order IDs to delete them individually
+      const { data: allOrders, error: fetchError } = await supabase
         .from('orders')
-        .delete()
-        .neq('id', ''); // Delete all records
+        .select('id');
 
-      if (deleteError) {
-        throw deleteError;
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (allOrders && allOrders.length > 0) {
+        // Delete all orders by their IDs
+        const { error: deleteError } = await supabase
+          .from('orders')
+          .delete()
+          .in('id', allOrders.map(order => order.id));
+
+        if (deleteError) {
+          throw deleteError;
+        }
       }
 
       setOrders([]);

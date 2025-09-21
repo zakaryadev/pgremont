@@ -39,6 +39,7 @@ export function PolygraphyCalculator() {
       ...prev,
       selectedMaterial: materialKey,
       selectedWidth: material.widths[0], // Auto-select first width
+      selectedService: 'none', // Reset service when material changes
     }));
   };
 
@@ -77,6 +78,17 @@ export function PolygraphyCalculator() {
       [materialKey]: {
         ...prev[materialKey],
         price: value,
+      }
+    }));
+  };
+
+  const updateMaterialWastePrice = (materialKey: string, value: number) => {
+    if (isNaN(value)) return;
+    setMaterials(prev => ({
+      ...prev,
+      [materialKey]: {
+        ...prev[materialKey],
+        wastePrice: value,
       }
     }));
   };
@@ -143,6 +155,8 @@ export function PolygraphyCalculator() {
     let totalPrintArea = 0;
     let totalMaterialUsed = 0;
     let totalServiceCost = 0;
+    let totalMaterialCost = 0;
+    let totalWasteCost = 0;
 
     // Only calculate for visible items
     state.items.filter(item => item.isVisible).forEach(item => {
@@ -151,7 +165,21 @@ export function PolygraphyCalculator() {
       totalPrintArea += itemPrintArea;
 
       // Material sarfi = har bir item uchun o'z material eni × item bo'yi × soni
-      totalMaterialUsed += item.materialWidth * item.height * item.quantity;
+      const itemMaterialUsed = item.materialWidth * item.height * item.quantity;
+      totalMaterialUsed += itemMaterialUsed;
+
+      // Calculate material cost for this specific item
+      const itemMaterialCost = itemPrintArea * item.materialPrice;
+      totalMaterialCost += itemMaterialCost;
+
+      // Calculate waste cost for this specific item
+      const itemWaste = Math.abs(itemMaterialUsed - itemPrintArea);
+      // Find the waste price for this specific material
+      const materialName = item.name.split(' ')[0];
+      const material = Object.values(materials).find(m => m.name === materialName);
+      const itemWastePrice = material?.wastePrice || currentMaterial.wastePrice;
+      const itemWasteCost = itemWaste * itemWastePrice;
+      totalWasteCost += itemWasteCost;
 
       // Calculate service cost for this specific item
       let itemServiceCost = 0;
@@ -186,20 +214,17 @@ export function PolygraphyCalculator() {
     const totalWaste = Math.abs(totalMaterialUsed - totalPrintArea);
     const wastePercentage = totalMaterialUsed > 0 ? (totalWaste / totalMaterialUsed) * 100 : 0;
 
-    const materialCost = totalPrintArea * currentMaterial.price;
-    const wasteCost = totalWaste * currentMaterial.price;
     const printCost = 0;
-
-    const totalCost = materialCost + printCost + wasteCost + totalServiceCost;
+    const totalCost = totalMaterialCost + printCost + totalWasteCost + totalServiceCost;
 
     return {
       totalPrintArea,
       totalMaterialUsed,
       totalWaste,
       wastePercentage,
-      materialCost,
+      materialCost: totalMaterialCost,
       printCost,
-      wasteCost,
+      wasteCost: totalWasteCost,
       serviceCost: totalServiceCost,
       totalCost,
     };
@@ -257,12 +282,14 @@ export function PolygraphyCalculator() {
               selectedWidth={state.selectedWidth}
               materialPrice={currentMaterial.price}
               materialName={currentMaterial.name}
+              selectedService={state.selectedService}
               onAddItem={addItem}
             />
 
             <ServiceSelector
               services={services}
               selectedService={state.selectedService}
+              selectedMaterial={state.selectedMaterial}
               onSelect={selectService}
             />
           </div>
@@ -280,6 +307,7 @@ export function PolygraphyCalculator() {
                 materials={materials}
                 services={services}
                 onUpdateMaterialPrice={updateMaterialPrice}
+                onUpdateMaterialWastePrice={updateMaterialWastePrice}
                 onUpdateServicePrice={updateServicePrice}
               />
 

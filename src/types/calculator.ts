@@ -2,12 +2,14 @@ export interface Material {
   name: string;
   widths: number[];
   price: number;
+  wastePrice: number; // Chiqindi uchun alohida narx
 }
 
 export interface Service {
   name: string;
   price: number;
   type: 'fixed' | 'per_sqm';
+  materials?: string[]; // Material turlari ro'yxati (agar bo'sh bo'lsa, barcha materiallar uchun)
 }
 
 export interface Item {
