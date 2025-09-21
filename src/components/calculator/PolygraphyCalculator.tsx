@@ -20,14 +20,15 @@ export function PolygraphyCalculator() {
   const [services, setServices] = useState(initialServices);
   const [serviceVisibility, setServiceVisibility] = useState<ServiceVisibility>({});
   const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [state, setState] = useState<CalculatorState>({
     items: [],
     selectedMaterial: 'banner',
     selectedWidth: 3.2,
     selectedService: 'none',
   });
-  
-  const { saveOrder } = useOrders();
+
+  const { saveOrder, refreshOrders } = useOrders();
   const { toast } = useToast();
 
   const currentMaterial = materials[state.selectedMaterial];
@@ -56,21 +57,9 @@ export function PolygraphyCalculator() {
   };
 
   const addItem = (item: Item) => {
-    // Auto-generate product name with material name and width
-    const materialName = currentMaterial.name;
-    const autoName = `${materialName} (${item.materialWidth}m)`;
-    
-    // Use provided name or auto-generate
-    const finalName = item.name.trim() || autoName;
-    
-    const itemWithAutoName = {
-      ...item,
-      name: finalName
-    };
-    
     setState(prev => ({
       ...prev,
-      items: [...prev.items, itemWithAutoName],
+      items: [...prev.items, item],
     }));
   };
 
@@ -114,8 +103,8 @@ export function PolygraphyCalculator() {
   const toggleItemVisibility = (itemId: string) => {
     setState(prev => ({
       ...prev,
-      items: prev.items.map(item => 
-        item.id === itemId 
+      items: prev.items.map(item =>
+        item.id === itemId
           ? { ...item, isVisible: !item.isVisible }
           : item
       )
@@ -125,6 +114,8 @@ export function PolygraphyCalculator() {
   const handleSaveOrder = async (orderName: string, phone?: string) => {
     try {
       await saveOrder(orderName, state, results, materials, services, phone);
+      // Trigger refresh in OrderHistory component
+      setRefreshTrigger(prev => prev + 1);
       toast({
         title: "Buyurtma saqlandi",
         description: `"${orderName}" nomli buyurtma muvaffaqiyatli saqlandi`,
@@ -151,13 +142,45 @@ export function PolygraphyCalculator() {
   const results = useMemo((): CalculationResults => {
     let totalPrintArea = 0;
     let totalMaterialUsed = 0;
+    let totalServiceCost = 0;
 
     // Only calculate for visible items
     state.items.filter(item => item.isVisible).forEach(item => {
       // Pechat maydoni = item eni × item bo'yi × soni
-      totalPrintArea += item.width * item.height * item.quantity;
+      const itemPrintArea = item.width * item.height * item.quantity;
+      totalPrintArea += itemPrintArea;
+
       // Material sarfi = har bir item uchun o'z material eni × item bo'yi × soni
       totalMaterialUsed += item.materialWidth * item.height * item.quantity;
+
+      // Calculate service cost for this specific item
+      let itemServiceCost = 0;
+
+      // Assembly service cost
+      if (item.assemblyService && item.assemblyService !== 'none') {
+        const assemblyService = services[item.assemblyService];
+        if (assemblyService) {
+          if (assemblyService.type === 'per_sqm') {
+            itemServiceCost += itemPrintArea * assemblyService.price;
+          } else {
+            itemServiceCost += assemblyService.price;
+          }
+        }
+      }
+
+      // Disassembly service cost
+      if (item.disassemblyService && item.disassemblyService !== 'none') {
+        const disassemblyService = services[item.disassemblyService];
+        if (disassemblyService) {
+          if (disassemblyService.type === 'per_sqm') {
+            itemServiceCost += itemPrintArea * disassemblyService.price;
+          } else {
+            itemServiceCost += disassemblyService.price;
+          }
+        }
+      }
+
+      totalServiceCost += itemServiceCost;
     });
 
     const totalWaste = Math.abs(totalMaterialUsed - totalPrintArea);
@@ -167,20 +190,7 @@ export function PolygraphyCalculator() {
     const wasteCost = totalWaste * currentMaterial.price;
     const printCost = 0;
 
-    const currentService = services[state.selectedService];
-    let serviceCost = 0;
-    
-    // Only calculate service cost if the service is visible
-    const isServiceVisible = serviceVisibility[state.selectedService] ?? true;
-    if (isServiceVisible && currentService) {
-      if (currentService.type === 'per_sqm') {
-        serviceCost = totalPrintArea * currentService.price;
-      } else {
-        serviceCost = currentService.price;
-      }
-    }
-
-    const totalCost = materialCost + printCost + wasteCost + serviceCost;
+    const totalCost = materialCost + printCost + wasteCost + totalServiceCost;
 
     return {
       totalPrintArea,
@@ -190,10 +200,10 @@ export function PolygraphyCalculator() {
       materialCost,
       printCost,
       wasteCost,
-      serviceCost,
+      serviceCost: totalServiceCost,
       totalCost,
     };
-  }, [state, currentMaterial, services, serviceVisibility]);
+  }, [state, currentMaterial, services]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -207,8 +217,9 @@ export function PolygraphyCalculator() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
           {/* Left Column: Input Forms and Prices */}
+
           <div className="xl:col-span-1 space-y-6">
             <MaterialSelector
               materials={materials}
@@ -222,17 +233,7 @@ export function PolygraphyCalculator() {
               onSelect={selectWidth}
             />
 
-            <ItemForm
-              selectedWidth={state.selectedWidth}
-              materialPrice={currentMaterial.price}
-              onAddItem={addItem}
-            />
-
-            <ServiceSelector
-              services={services}
-              selectedService={state.selectedService}
-              onSelect={selectService}
-            />
+            
 
             {/* <ServiceVisibilityToggle
               services={services}
@@ -251,13 +252,27 @@ export function PolygraphyCalculator() {
               disabled={state.items.length === 0}
             />
           </div>
+          <div className="xl:col-span-1 space-y-6">
+          <ItemForm
+              selectedWidth={state.selectedWidth}
+              materialPrice={currentMaterial.price}
+              materialName={currentMaterial.name}
+              onAddItem={addItem}
+            />
 
+            <ServiceSelector
+              services={services}
+              selectedService={state.selectedService}
+              onSelect={selectService}
+            />
+          </div>
           {/* Right Column: Lists and Results */}
           <div className="xl:col-span-2 space-y-6">
             <ItemsList
               items={state.items}
               onDeleteItem={deleteItem}
               onToggleVisibility={toggleItemVisibility}
+              services={services}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -268,18 +283,19 @@ export function PolygraphyCalculator() {
                 onUpdateServicePrice={updateServicePrice}
               />
 
-              <Results 
-                results={results} 
-                items={state.items} 
+              <Results
+                results={results}
+                items={state.items}
                 materialPrice={currentMaterial.price}
                 materials={materials}
               />
             </div>
 
-            <OrderHistory 
+            <OrderHistory
               onLoadOrder={handleLoadOrder}
               isOpen={showOrderHistory}
               onClose={() => setShowOrderHistory(false)}
+              refreshTrigger={refreshTrigger}
             />
           </div>
         </div>

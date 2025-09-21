@@ -19,6 +19,8 @@ export interface Item {
   isVisible: boolean;
   materialWidth: number;
   materialPrice: number;
+  assemblyService?: string; // Assembly service for this specific item
+  disassemblyService?: string; // Disassembly service for this specific item
 }
 
 export interface CalculatorState {

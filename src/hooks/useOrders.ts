@@ -7,12 +7,7 @@ export function useOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load orders from Supabase on mount
-  useEffect(() => {
-    loadOrders();
-  }, []);
-
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -44,7 +39,12 @@ export function useOrders() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Load orders from Supabase on mount
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   const saveOrder = useCallback(async (
     name: string,
@@ -59,6 +59,7 @@ export function useOrders() {
       
       const orderData = {
         name,
+        phone,
         state,
         results,
         materials,

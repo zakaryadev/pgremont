@@ -3,15 +3,16 @@ import { Card } from "../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Badge } from "../ui/badge";
 import { Trash2, Eye, EyeOff } from "lucide-react";
-import { Item } from "../../types/calculator";
+import { Item, Service } from "../../types/calculator";
 
 interface ItemsListProps {
   items: Item[];
   onDeleteItem: (index: number) => void;
   onToggleVisibility?: (itemId: string) => void;
+  services?: Record<string, Service>;
 }
 
-export function ItemsList({ items, onDeleteItem, onToggleVisibility }: ItemsListProps) {
+export function ItemsList({ items, onDeleteItem, onToggleVisibility, services }: ItemsListProps) {
   return (
     <Card className="p-6 bg-gradient-to-br from-card to-muted/20">
       <h2 className="text-xl font-semibold mb-4 text-foreground">Qo'shilgan Ishlar Ro'yxati</h2>
@@ -31,12 +32,22 @@ export function ItemsList({ items, onDeleteItem, onToggleVisibility }: ItemsList
                 <TableHead>Bo'yi (m)</TableHead>
                 <TableHead>Soni</TableHead>
                 <TableHead>Maydoni (m²)</TableHead>
+                <TableHead>Xizmatlar</TableHead>
                 <TableHead>Amal</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((item, index) => {
                 const area = (item.width * item.height * item.quantity).toFixed(2);
+                
+                // Get service names
+                const assemblyServiceName = item.assemblyService && services?.[item.assemblyService] 
+                  ? services[item.assemblyService].name 
+                  : null;
+                const disassemblyServiceName = item.disassemblyService && services?.[item.disassemblyService] 
+                  ? services[item.disassemblyService].name 
+                  : null;
+                
                 return (
                   <TableRow key={item.id} className={`hover:bg-muted/50 ${!item.isVisible ? 'opacity-50' : ''}`}>
                     <TableCell className="font-medium">{item.name}</TableCell>
@@ -56,6 +67,23 @@ export function ItemsList({ items, onDeleteItem, onToggleVisibility }: ItemsList
                     <TableCell>{item.height}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
                     <TableCell className="font-semibold">{area}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {assemblyServiceName && (
+                          <Badge variant="outline" className="text-xs">
+                            Montaj: {assemblyServiceName}
+                          </Badge>
+                        )}
+                        {disassemblyServiceName && (
+                          <Badge variant="outline" className="text-xs">
+                            Demontaj: {disassemblyServiceName}
+                          </Badge>
+                        )}
+                        {!assemblyServiceName && !disassemblyServiceName && (
+                          <span className="text-xs text-muted-foreground">Xizmat yo'q</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         {onToggleVisibility && (

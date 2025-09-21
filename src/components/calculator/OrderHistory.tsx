@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -17,9 +17,10 @@ interface OrderHistoryProps {
   onLoadOrder?: (order: Order) => void;
   isOpen?: boolean;
   onClose?: () => void;
+  refreshTrigger?: number; // Add a trigger to force refresh
 }
 
-export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose }: OrderHistoryProps) {
+export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, refreshTrigger }: OrderHistoryProps) {
   const { orders, loading, error, deleteOrder, clearAllOrders, refreshOrders } = useOrders();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -30,6 +31,13 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose }: O
 
   // Use external isOpen if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+
+  // Refresh orders when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      refreshOrders();
+    }
+  }, [refreshTrigger]); // Remove refreshOrders from dependencies
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('uz-UZ', {
