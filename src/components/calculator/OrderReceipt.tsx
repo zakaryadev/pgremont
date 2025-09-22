@@ -120,8 +120,8 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
             padding: 0 !important;
             margin: 0 !important;
             font-family: 'Courier New', monospace !important;
-            font-size: 8px !important;
-            line-height: 1.0 !important;
+            font-size: 10px !important;
+            line-height: 1.2 !important;
             overflow: visible !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
@@ -132,7 +132,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
             width: 100% !important;
             max-width: none !important;
             margin: 0 !important;
-            padding: 5px !important;
+            padding: 8px !important;
             border: none !important;
             box-shadow: none !important;
             page-break-inside: avoid !important;
