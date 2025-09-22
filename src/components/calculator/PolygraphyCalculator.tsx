@@ -240,9 +240,6 @@ export function PolygraphyCalculator() {
               alt="TOGO GROUP Logo" 
               className="h-16 md:h-20 w-auto mb-4"
             />
-            <h4 className="text-2xl md:text-3xl font-bold text-primary mb-2">
-              Professional Poligrafiya Kalkulyatori
-            </h4>
             <p className="text-lg text-muted-foreground">
               Barcha turdagi bosma ishlar uchun to'liq hisob-kitob
             </p>
