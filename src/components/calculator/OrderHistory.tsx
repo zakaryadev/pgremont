@@ -10,10 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Trash2, Calendar, DollarSign, Package, Eye, Loader2, AlertCircle, Phone, Filter, X, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { Trash2, Calendar, DollarSign, Package, Eye, Loader2, AlertCircle, Phone, Filter, X, ChevronDown, ChevronUp, Download, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Order } from '../../types/calculator';
 import { useOrders } from '../../hooks/useOrders';
+import { OrderReceipt } from './OrderReceipt';
 
 interface OrderHistoryProps {
   onLoadOrder?: (order: Order) => void;
@@ -36,6 +37,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   const [searchQuery, setSearchQuery] = useState('');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [printOrder, setPrintOrder] = useState<Order | null>(null);
 
   // Use external isOpen if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -317,6 +319,11 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
     }
   };
 
+  const handleShowReceipt = (order: Order, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPrintOrder(order);
+  };
+
   // Refresh orders when dialog opens
   const handleDialogOpen = (open: boolean) => {
     if (onClose) {
@@ -593,19 +600,31 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                             )}
                           </CardDescription>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => handleDeleteOrder(order.id, e)}
-                          className="text-destructive hover:text-destructive h-5 w-5 sm:h-6 sm:w-6 p-0 ml-1"
-                          disabled={deletingId === order.id}
-                        >
-                          {deletingId === order.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3 w-3" />
-                          )}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => handleShowReceipt(order, e)}
+                            className="text-green-600 hover:text-green-700 h-5 w-5 sm:h-6 sm:w-6 p-0"
+                            title="Chekni ko'rish va PDF yuklash"
+                          >
+                            <FileText className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => handleDeleteOrder(order.id, e)}
+                            className="text-destructive hover:text-destructive h-5 w-5 sm:h-6 sm:w-6 p-0"
+                            disabled={deletingId === order.id}
+                            title="Buyurtmani o'chirish"
+                          >
+                            {deletingId === order.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0 pb-2 px-2 sm:px-3">
@@ -637,6 +656,21 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
           </ScrollArea>
         </div>
       </DialogContent>
+
+      {/* Print Receipt Dialog */}
+      {printOrder && (
+        <Dialog open={!!printOrder} onOpenChange={() => setPrintOrder(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Chekni ko'rish va yuklash</DialogTitle>
+              <DialogDescription>
+                {printOrder.name} buyurtmasi uchun chek - PDF yuklash yoki chop etish
+              </DialogDescription>
+            </DialogHeader>
+            <OrderReceipt order={printOrder} />
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 }

@@ -234,12 +234,19 @@ export function PolygraphyCalculator() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h4 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
-            Professional Poligrafiya Kalkulyatori
-          </h4>
-          <p className="text-xl text-muted-foreground">
-            Barcha turdagi bosma ishlar uchun to'liq hisob-kitob
-          </p>
+          <div className="flex flex-col items-center mb-4">
+            <img 
+              src="/logo.png" 
+              alt="TOGO GROUP Logo" 
+              className="h-16 md:h-20 w-auto mb-4"
+            />
+            <h4 className="text-2xl md:text-3xl font-bold text-primary mb-2">
+              Professional Poligrafiya Kalkulyatori
+            </h4>
+            <p className="text-lg text-muted-foreground">
+              Barcha turdagi bosma ishlar uchun to'liq hisob-kitob
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
