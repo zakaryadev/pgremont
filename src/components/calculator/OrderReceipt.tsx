@@ -83,7 +83,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
 
   return (
     <div className="print-receipt">
-      <style jsx>{`
+      <style>{`
         @media print {
           @page {
             size: 80mm 200mm;
@@ -140,6 +140,12 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
             box-sizing: border-box !important;
           }
           
+          .receipt-logo-img {
+            height: 25px !important;
+            width: auto !important;
+            max-width: 100px !important;
+          }
+          
           .receipt-section {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
@@ -177,6 +183,16 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
           border-bottom: 1px dashed #333;
           padding-bottom: 8px;
           margin-bottom: 10px;
+        }
+        
+        .receipt-logo {
+          margin-bottom: 6px;
+        }
+        
+        .receipt-logo-img {
+          height: 30px;
+          width: auto;
+          max-width: 120px;
         }
         
         .receipt-title {
@@ -254,7 +270,13 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
 
       <div ref={receiptRef} className="receipt-container">
         <div className="receipt-header">
-          <div className="receipt-title">TOGO GROUP</div>
+          <div className="w-[100%] receipt-logo text-center">
+            <img 
+              src="/logo_chek.png" 
+              alt="TOGO GROUP Logo" 
+              className="receipt-logo-img m-auto"
+            />
+          </div>
           <div className="receipt-subtitle">Professional Poligrafiya</div>
           <div className="receipt-subtitle">Chek № {order.id.slice(-8)}</div>
         </div>
