@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Trash2, Calendar, DollarSign, Package, Eye, Loader2, AlertCircle, Phone, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Calendar, DollarSign, Package, Eye, Loader2, AlertCircle, Phone, Filter, X, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Order } from '../../types/calculator';
 import { useOrders } from '../../hooks/useOrders';
 
@@ -34,6 +35,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   const [priceRangeFilter, setPriceRangeFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Use external isOpen if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -167,6 +169,110 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
     setServiceFilter('all');
     setPriceRangeFilter('all');
     setSearchQuery('');
+  };
+
+  const exportToExcel = async () => {
+    try {
+      setIsExporting(true);
+      
+      // Prepare data for Excel
+      const excelData = filteredOrders.map((order, index) => {
+        const orderDate = new Date(order.createdAt);
+        const day = orderDate.getDate().toString().padStart(2, '0');
+        const month = (orderDate.getMonth() + 1).toString().padStart(2, '0');
+        const year = orderDate.getFullYear();
+        const hours = orderDate.getHours().toString().padStart(2, '0');
+        const minutes = orderDate.getMinutes().toString().padStart(2, '0');
+        const formattedDate = `${day}.${month}.${year}`;
+        const formattedTime = `${hours}:${minutes}`;
+
+        return {
+          '№': index + 1,
+          'Buyurtma nomi': order.name,
+          'Sana': formattedDate,
+          'Vaqt': formattedTime,
+          'Telefon': order.phone || '',
+          'Material': order.materials[order.state.selectedMaterial]?.name || '',
+          'Mahsulotlar soni': order.state.items.length,
+          'Xizmat': order.services[order.state.selectedService]?.name || 'Xizmat yo\'q',
+          'Jami narx': order.results.totalCost,
+          'Pechat maydoni (m²)': order.results.totalPrintArea.toFixed(2),
+          'Material ishlatilgan (m²)': order.results.totalMaterialUsed.toFixed(2),
+          'Chiqindi (m²)': order.results.totalWaste.toFixed(2),
+          'Chiqindi foizi (%)': order.results.wastePercentage.toFixed(1),
+          'Material narxi': order.results.materialCost,
+          'Pechat narxi': order.results.printCost,
+          'Chiqindi narxi': order.results.wasteCost,
+          'Xizmat narxi': order.results.serviceCost
+        };
+      });
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      // Set column widths
+      const colWidths = [
+        { wch: 5 },   // №
+        { wch: 25 },  // Buyurtma nomi
+        { wch: 12 },  // Sana
+        { wch: 8 },   // Vaqt
+        { wch: 15 },  // Telefon
+        { wch: 20 },  // Material
+        { wch: 15 },  // Mahsulotlar soni
+        { wch: 25 },  // Xizmat
+        { wch: 15 },  // Jami narx
+        { wch: 18 },  // Pechat maydoni
+        { wch: 20 },  // Material ishlatilgan
+        { wch: 15 },  // Chiqindi
+        { wch: 15 },  // Chiqindi foizi
+        { wch: 15 },  // Material narxi
+        { wch: 15 },  // Pechat narxi
+        { wch: 15 },  // Chiqindi narxi
+        { wch: 15 }   // Xizmat narxi
+      ];
+      ws['!cols'] = colWidths;
+
+      // Style headers with background color
+      const headerStyle = {
+        fill: {
+          fgColor: { rgb: "4472C4" } // Blue background
+        },
+        font: {
+          bold: true,
+          color: { rgb: "FFFFFF" } // White text
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center"
+        }
+      };
+
+      // Apply header styles
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+        if (!ws[cellAddress]) continue;
+        
+        ws[cellAddress].s = headerStyle;
+      }
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Buyurtmalar');
+
+      // Generate filename with current date
+      const currentDate = new Date().toLocaleDateString('uz-UZ').replace(/\//g, '-');
+      const filename = `Buyurtmalar_${currentDate}.xlsx`;
+
+      // Save file
+      XLSX.writeFile(wb, filename);
+      
+    } catch (error) {
+      console.error('Excel export xatosi:', error);
+      alert('Excel faylini yuklab olishda xatolik yuz berdi!');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleDeleteOrder = async (orderId: string, e: React.MouseEvent) => {
@@ -407,19 +513,34 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                   </Badge>
                 )}
               </div>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={handleClearAllOrders}
-                disabled={clearing}
-              >
-                {clearing ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4 mr-2" />
-                )}
-                Barchasini o'chirish
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  onClick={exportToExcel}
+                  disabled={isExporting || filteredOrders.length === 0}
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  Excel yuklab olish
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={handleClearAllOrders}
+                  disabled={clearing}
+                >
+                  {clearing ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  Barchasini o'chirish
+                </Button>
+              </div>
             </div>
           )}
 
