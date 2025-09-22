@@ -9,7 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Calendar, DollarSign, Package, Eye, Loader2, AlertCircle, Phone, Filter, X } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Trash2, Calendar, DollarSign, Package, Eye, Loader2, AlertCircle, Phone, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Order } from '../../types/calculator';
 import { useOrders } from '../../hooks/useOrders';
 
@@ -32,6 +33,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   const [serviceFilter, setServiceFilter] = useState<string>('all');
   const [priceRangeFilter, setPriceRangeFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   // Use external isOpen if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
@@ -235,7 +237,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-1">
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -256,127 +258,140 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
           {/* Filter Controls */}
           {orders.length > 0 && (
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filtrlash
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Search */}
-                <div className="space-y-2">
-                  <Label htmlFor="search">Qidiruv</Label>
-                  <Input
-                    id="search"
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Klient nomi yoki telefon raqami bo'yicha qidiring..."
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="date-filter">Sana bo'yicha</Label>
-                    <Select value={dateFilter} onValueChange={(value: any) => setDateFilter(value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sana tanlang" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Barcha buyurtmalar</SelectItem>
-                        <SelectItem value="today">Bugun</SelectItem>
-                        <SelectItem value="week">Oxirgi hafta</SelectItem>
-                        <SelectItem value="month">Oxirgi oy</SelectItem>
-                        <SelectItem value="custom">Maxsus sana</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="material-filter">Material bo'yicha</Label>
-                    <Select value={materialFilter} onValueChange={setMaterialFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Material tanlang" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Barcha materiallar</SelectItem>
-                        <SelectItem value="banner">Баннер</SelectItem>
-                        <SelectItem value="oracal">Оракал</SelectItem>
-                        <SelectItem value="setka">Сеточный оракал</SelectItem>
-                        <SelectItem value="prozrachka">Прозрачный оракал</SelectItem>
-                        <SelectItem value="holst">Холст</SelectItem>
-                        <SelectItem value="bekprint">Бекпринт</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="service-filter">Xizmat bo'yicha</Label>
-                    <Select value={serviceFilter} onValueChange={setServiceFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Xizmat tanlang" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Barcha xizmatlar</SelectItem>
-                        <SelectItem value="none">Xizmat yo'q</SelectItem>
-                        <SelectItem value="install">Установка</SelectItem>
-                        <SelectItem value="install_rails">Установка с рейками</SelectItem>
-                        <SelectItem value="install_oracal">Установка оракал</SelectItem>
-                        <SelectItem value="install_dismantle">Установка + Демонтаж</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="price-filter">Narx oralig'i</Label>
-                    <Select value={priceRangeFilter} onValueChange={(value: any) => setPriceRangeFilter(value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Narx oralig'ini tanlang" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Barcha narxlar</SelectItem>
-                        <SelectItem value="low">500,000 so'm dan kam</SelectItem>
-                        <SelectItem value="medium">500,000 - 2,000,000 so'm</SelectItem>
-                        <SelectItem value="high">2,000,000 so'm dan yuqori</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {dateFilter === 'custom' && (
-                  <div className="space-y-2">
-                    <Label>Maxsus sana oralig'i</Label>
-                    <div className="grid grid-cols-2 gap-2">
+              <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardTitle className="text-base flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        Filtrlash
+                      </div>
+                      {isFiltersOpen ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
+                    {/* Search */}
+                    <div className="space-y-2">
+                      <Label htmlFor="search">Qidiruv</Label>
                       <Input
-                        type="date"
-                        value={customStartDate}
-                        onChange={(e) => setCustomStartDate(e.target.value)}
-                        placeholder="Boshlanish sanasi"
-                      />
-                      <Input
-                        type="date"
-                        value={customEndDate}
-                        onChange={(e) => setCustomEndDate(e.target.value)}
-                        placeholder="Tugash sanasi"
+                        id="search"
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Klient nomi yoki telefon raqami bo'yicha qidiring..."
                       />
                     </div>
-                  </div>
-                )}
-                
-                {(dateFilter !== 'all' || materialFilter !== 'all' || serviceFilter !== 'all' || priceRangeFilter !== 'all' || searchQuery.trim()) && (
-                  <div className="flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={clearFilters}
-                      className="flex items-center gap-2"
-                    >
-                      <X className="h-4 w-4" />
-                      Filtrlarni tozalash
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="date-filter">Sana bo'yicha</Label>
+                        <Select value={dateFilter} onValueChange={(value: any) => setDateFilter(value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sana tanlang" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Barcha buyurtmalar</SelectItem>
+                            <SelectItem value="today">Bugun</SelectItem>
+                            <SelectItem value="week">Oxirgi hafta</SelectItem>
+                            <SelectItem value="month">Oxirgi oy</SelectItem>
+                            <SelectItem value="custom">Maxsus sana</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="material-filter">Material bo'yicha</Label>
+                        <Select value={materialFilter} onValueChange={setMaterialFilter}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Material tanlang" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Barcha materiallar</SelectItem>
+                            <SelectItem value="banner">Баннер</SelectItem>
+                            <SelectItem value="oracal">Оракал</SelectItem>
+                            <SelectItem value="setka">Сеточный оракал</SelectItem>
+                            <SelectItem value="prozrachka">Прозрачный оракал</SelectItem>
+                            <SelectItem value="holst">Холст</SelectItem>
+                            <SelectItem value="bekprint">Бекпринт</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="service-filter">Xizmat bo'yicha</Label>
+                        <Select value={serviceFilter} onValueChange={setServiceFilter}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Xizmat tanlang" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Barcha xizmatlar</SelectItem>
+                            <SelectItem value="none">Xizmat yo'q</SelectItem>
+                            <SelectItem value="install">Установка</SelectItem>
+                            <SelectItem value="install_rails">Установка с рейками</SelectItem>
+                            <SelectItem value="install_oracal">Установка оракал</SelectItem>
+                            <SelectItem value="install_dismantle">Установка + Демонтаж</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="price-filter">Narx oralig'i</Label>
+                        <Select value={priceRangeFilter} onValueChange={(value: any) => setPriceRangeFilter(value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Narx oralig'ini tanlang" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Barcha narxlar</SelectItem>
+                            <SelectItem value="low">500,000 so'm dan kam</SelectItem>
+                            <SelectItem value="medium">500,000 - 2,000,000 so'm</SelectItem>
+                            <SelectItem value="high">2,000,000 so'm dan yuqori</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    {dateFilter === 'custom' && (
+                      <div className="space-y-2">
+                        <Label>Maxsus sana oralig'i</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <Input
+                            type="date"
+                            value={customStartDate}
+                            onChange={(e) => setCustomStartDate(e.target.value)}
+                            placeholder="Boshlanish sanasi"
+                          />
+                          <Input
+                            type="date"
+                            value={customEndDate}
+                            onChange={(e) => setCustomEndDate(e.target.value)}
+                            placeholder="Tugash sanasi"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {(dateFilter !== 'all' || materialFilter !== 'all' || serviceFilter !== 'all' || priceRangeFilter !== 'all' || searchQuery.trim()) && (
+                      <div className="flex justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={clearFilters}
+                          className="flex items-center gap-2"
+                        >
+                          <X className="h-4 w-4" />
+                          Filtrlarni tozalash
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
             </Card>
           )}
 
@@ -433,7 +448,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                 </Button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 pb-1">
                 {filteredOrders.map((order) => (
                   <Card 
                     key={order.id} 
@@ -473,23 +488,22 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
                         <div className="space-y-1">
-                          <p className="text-muted-foreground">Material</p>
+                          <p className="text-muted-foreground text-xs">Material</p>
                           <p className="font-medium">{order.materials[order.state.selectedMaterial]?.name}</p>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-muted-foreground">Mahsulotlar</p>
+                          <p className="text-muted-foreground text-xs">Mahsulotlar</p>
                           <p className="font-medium">{order.state.items.length} ta</p>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-muted-foreground">Xizmat</p>
+                          <p className="text-muted-foreground text-xs">Xizmat</p>
                           <p className="font-medium">{order.services[order.state.selectedService]?.name}</p>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-muted-foreground">Jami narx</p>
-                          <p className="font-medium text-primary flex items-center">
-                            {/* <DollarSign className="h-4 w-4 mr-1" /> */}
+                          <p className="text-muted-foreground text-xs">Jami narx</p>
+                          <p className="font-medium text-primary">
                             {formatCurrency(order.results.totalCost)}
                           </p>
                         </div>
