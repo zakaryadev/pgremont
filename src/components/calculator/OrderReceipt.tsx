@@ -21,7 +21,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
     const year = orderDate.getFullYear();
     const hours = orderDate.getHours().toString().padStart(2, '0');
     const minutes = orderDate.getMinutes().toString().padStart(2, '0');
-    
+
     return `${day}.${month}.${year} ${hours}:${minutes}`;
   };
 
@@ -68,7 +68,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
 
       // Generate filename
       const fileName = `Chek_${order.name}_${formatDate(order.createdAt).replace(/[.:\s]/g, '_')}.pdf`;
-      
+
       // Download PDF
       pdf.save(fileName);
     } catch (error) {
@@ -263,7 +263,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
           margin-top: 10px;
           padding-top: 6px;
           border-top: 1px dashed #333;
-          font-size: 8px;
+          font-size: 11px;
           color: #666;
         }
       `}</style>
@@ -271,9 +271,9 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
       <div ref={receiptRef} className="receipt-container">
         <div className="receipt-header">
           <div className="w-[100%] receipt-logo text-center">
-            <img 
-              src="/logo_chek.png" 
-              alt="TOGO GROUP Logo" 
+            <img
+              src="/logo_chek.png"
+              alt="TOGO GROUP Logo"
               className="receipt-logo-img m-auto"
             />
           </div>
@@ -295,11 +295,22 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
             <span className="receipt-row-label">{formatDate(order.createdAt)}</span>
           </div>
           <div className="receipt-row">
-            <span className="receipt-row-label">Mat: {order.materials[order.state.selectedMaterial]?.name || 'Tanlanmagan'}</span>
+            <span className="receipt-row-label">Material: {order.materials[order.state.selectedMaterial]?.name || 'Tanlanmagan'}</span>
           </div>
           <div className="receipt-row">
-            <span className="receipt-row-label">Xiz: {order.services[order.state.selectedService]?.name || 'Xizmat yo\'q'}</span>
+            <span className="receipt-row-label">Material narxi: {formatCurrency(order.materials[order.state.selectedMaterial]?.price || 0)}/m²</span>
           </div>
+          <div className="receipt-row">
+            <span className="receipt-row-label">Chiqindi narxi: {formatCurrency(order.materials[order.state.selectedMaterial]?.wastePrice || 0)}/m²</span>
+          </div>
+          <div className="receipt-row">
+            <span className="receipt-row-label">Xizmat: {order.services[order.state.selectedService]?.name || 'Xizmat yo\'q'}</span>
+          </div>
+          {order.services[order.state.selectedService] && (
+            <div className="receipt-row">
+              <span className="receipt-row-label">Xizmat narxi: {formatCurrency(order.services[order.state.selectedService]?.price || 0)}</span>
+            </div>
+          )}
         </div>
 
         <div className="receipt-section">
@@ -311,7 +322,16 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
                   <span className="receipt-row-label">{index + 1}. {item.name}</span>
                 </div>
                 <div className="receipt-row">
-                  <span className="receipt-row-label">{item.width}×{item.height} m, {item.quantity} ta</span>
+                  <span className="receipt-row-label">O'lcham: {item.width}×{item.height} m</span>
+                </div>
+                <div className="receipt-row">
+                  <span className="receipt-row-label">Miqdor: {item.quantity} ta</span>
+                </div>
+                <div className="receipt-row">
+                  <span className="receipt-row-label">Maydon: {(item.width * item.height * item.quantity).toFixed(2)} m²</span>
+                </div>
+                <div className="receipt-row">
+                  <span className="receipt-row-label">Material eni: {item.materialWidth} m</span>
                 </div>
               </div>
             ))}
@@ -321,15 +341,39 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         <div className="receipt-section">
           <div className="receipt-section-title">HISOB-KITOB</div>
           <div className="receipt-row">
-            <span className="receipt-row-label">Pech: {order.results.totalPrintArea.toFixed(2)}m²</span>
-            <span className="receipt-row-value">{formatCurrency(order.results.printCost)}</span>
+            <span className="receipt-row-label">Pechat maydoni: {order.results.totalPrintArea.toFixed(2)}m²</span>
+            <span className="receipt-row-value">{formatCurrency((order.materials[order.state.selectedMaterial]?.price || 0) * order.results.totalPrintArea)}</span>
           </div>
           <div className="receipt-row">
-            <span className="receipt-row-label">Material: {order.results.totalMaterialUsed.toFixed(2)}m²</span>
+            <span className="receipt-row-label">Material ishlatilgan: {order.results.totalMaterialUsed.toFixed(2)}m²</span>
             <span className="receipt-row-value">{formatCurrency(order.results.materialCost)}</span>
           </div>
           <div className="receipt-row">
+            <span className="receipt-row-label">Chiqindi: {order.results.totalWaste.toFixed(2)}m² ({order.results.wastePercentage.toFixed(1)}%)</span>
+            <span className="receipt-row-value">{formatCurrency(order.results.wasteCost)}</span>
+          </div>
+          <div className="receipt-row">
             <span className="receipt-row-label">Xizmat:</span>
+            <span className="receipt-row-value">{formatCurrency(order.results.serviceCost)}</span>
+          </div>
+        </div>
+
+        <div className="receipt-section">
+          <div className="receipt-section-title">NARXLAR</div>
+          <div className="receipt-row">
+            <span className="receipt-row-label">Material narxi:</span>
+            <span className="receipt-row-value">{formatCurrency(order.results.materialCost)}</span>
+          </div>
+          <div className="receipt-row">
+            <span className="receipt-row-label">Pechat narxi:</span>
+            <span className="receipt-row-value">{formatCurrency((order.materials[order.state.selectedMaterial]?.price || 0) * order.results.totalPrintArea)}</span>
+          </div>
+          <div className="receipt-row">
+            <span className="receipt-row-label">Chiqindi narxi:</span>
+            <span className="receipt-row-value">{formatCurrency(order.results.wasteCost)}</span>
+          </div>
+          <div className="receipt-row">
+            <span className="receipt-row-label">Xizmat narxi:</span>
             <span className="receipt-row-value">{formatCurrency(order.results.serviceCost)}</span>
           </div>
         </div>
@@ -342,13 +386,16 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         </div>
 
         <div className="receipt-footer">
-          <div>Rahmat!</div>
+          <h3>
+            Reklama bor joyda — baraka bor!<br />
+            +(77) 300-45-00
+          </h3>
         </div>
       </div>
 
       <div className="no-print" style={{ textAlign: 'center', marginTop: '20px' }}>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button 
+          <button
             onClick={downloadPDF}
             style={{
               backgroundColor: '#28a745',
@@ -365,7 +412,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
           >
             📄 PDF yuklash
           </button>
-          <button 
+          <button
             onClick={printReceipt}
             style={{
               backgroundColor: '#007bff',
