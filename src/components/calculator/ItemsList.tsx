@@ -117,7 +117,7 @@ export function ItemsList({ items, onDeleteItem, onToggleVisibility, services, s
       )}
       
       {/* Pechat narxlari haqida ma'lumot - faqat tegishli material tanlanganda ko'rinadi */}
-      {(selectedMaterial === 'banner' || selectedMaterial === 'oracal' || selectedMaterial === 'setka' || selectedMaterial === 'prozrachka') && (
+      {(selectedMaterial === 'banner' || selectedMaterial === 'oracal') && (
         <div className="mt-6 pt-4 border-t border-border">
           <h3 className="text-sm font-medium text-muted-foreground mb-3">Pechat narxlari (m² uchun):</h3>
           
@@ -155,7 +155,7 @@ export function ItemsList({ items, onDeleteItem, onToggleVisibility, services, s
           )}
 
           {/* Oracal uchun pechat narxlari */}
-          {(selectedMaterial === 'oracal' || selectedMaterial === 'setka' || selectedMaterial === 'prozrachka') && (
+          {selectedMaterial === 'oracal' && (
             <div>
               <h4 className="text-xs font-medium text-muted-foreground mb-2">Оракал:</h4>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
