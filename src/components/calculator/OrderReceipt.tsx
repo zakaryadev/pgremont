@@ -190,9 +190,8 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         }
         
         .receipt-logo-img {
-          height: 30px;
+          height: 50px;
           width: auto;
-          max-width: 120px;
         }
         
         .receipt-title {
