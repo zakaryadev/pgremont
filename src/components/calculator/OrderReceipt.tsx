@@ -289,7 +289,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
                   <span className="receipt-row-label">{index + 1}. {item.name}</span>
                 </div>
                 <div className="receipt-row">
-                  <span className="receipt-row-label">{item.width}×{item.height} sm, {item.quantity} ta</span>
+                  <span className="receipt-row-label">{item.width}×{item.height} m, {item.quantity} ta</span>
                 </div>
               </div>
             ))}
@@ -303,11 +303,11 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
             <span className="receipt-row-value">{formatCurrency(order.results.printCost)}</span>
           </div>
           <div className="receipt-row">
-            <span className="receipt-row-label">Mat: {order.results.totalMaterialUsed.toFixed(2)}m²</span>
+            <span className="receipt-row-label">Material: {order.results.totalMaterialUsed.toFixed(2)}m²</span>
             <span className="receipt-row-value">{formatCurrency(order.results.materialCost)}</span>
           </div>
           <div className="receipt-row">
-            <span className="receipt-row-label">Xiz:</span>
+            <span className="receipt-row-label">Xizmat:</span>
             <span className="receipt-row-value">{formatCurrency(order.results.serviceCost)}</span>
           </div>
         </div>
