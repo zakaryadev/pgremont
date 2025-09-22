@@ -234,9 +234,9 @@ export function PolygraphyCalculator() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
+          <h4 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
             Professional Poligrafiya Kalkulyatori
-          </h1>
+          </h4>
           <p className="text-xl text-muted-foreground">
             Barcha turdagi bosma ishlar uchun to'liq hisob-kitob
           </p>
