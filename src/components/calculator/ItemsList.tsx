@@ -118,30 +118,66 @@ export function ItemsList({ items, onDeleteItem, onToggleVisibility, services }:
       {/* Pechat narxlari haqida ma'lumot - har doim ko'rinadi */}
       <div className="mt-6 pt-4 border-t border-border">
         <h3 className="text-sm font-medium text-muted-foreground mb-3">Pechat narxlari (m² uchun):</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
-            <div className="font-medium text-red-800">До 3 м²</div>
-            <div className="text-red-600">50 000 сум/м²</div>
+        
+        {/* Banner uchun pechat narxlari */}
+        <div className="mb-4">
+          <h4 className="text-xs font-medium text-muted-foreground mb-2">Баннер:</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-red-800">До 3 м²</div>
+              <div className="text-red-600">50 000 сум/м²</div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-red-800">4–15 м²</div>
+              <div className="text-red-600">35 000 сум/м²</div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-red-800">16–40 м²</div>
+              <div className="text-red-600">30 000 сум/м²</div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-red-800">41–100 м²</div>
+              <div className="text-red-600">25 000 сум/м²</div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-red-800">101–300 м²</div>
+              <div className="text-red-600">22 000 сум/м²</div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-red-800">301–1000 м²</div>
+              <div className="text-red-600">20 000 сум/м²</div>
+            </div>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
-            <div className="font-medium text-red-800">4–15 м²</div>
-            <div className="text-red-600">35 000 сум/м²</div>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
-            <div className="font-medium text-red-800">16–40 м²</div>
-            <div className="text-red-600">30 000 сум/м²</div>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
-            <div className="font-medium text-red-800">41–100 м²</div>
-            <div className="text-red-600">25 000 сум/м²</div>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
-            <div className="font-medium text-red-800">101–300 м²</div>
-            <div className="text-red-600">22 000 сум/м²</div>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
-            <div className="font-medium text-red-800">301–1000 м²</div>
-            <div className="text-red-600">20 000 сум/м²</div>
+        </div>
+
+        {/* Oracal uchun pechat narxlari */}
+        <div>
+          <h4 className="text-xs font-medium text-muted-foreground mb-2">Оракал:</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-blue-800">До 3 м²</div>
+              <div className="text-blue-600">50 000 сум/м²</div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-blue-800">4–15 м²</div>
+              <div className="text-blue-600">40 000 сум/м²</div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-blue-800">16–40 м²</div>
+              <div className="text-blue-600">35 000 сум/м²</div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-blue-800">41–100 м²</div>
+              <div className="text-blue-600">30 000 сум/м²</div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-blue-800">101–300 м²</div>
+              <div className="text-blue-600">28 000 сум/м²</div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+              <div className="font-medium text-blue-800">301–1000 м²</div>
+              <div className="text-blue-600">27 000 сум/м²</div>
+            </div>
           </div>
         </div>
       </div>

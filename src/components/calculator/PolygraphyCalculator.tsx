@@ -305,10 +305,7 @@ export function PolygraphyCalculator() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <PriceList
                 materials={materials}
-                services={services}
                 onUpdateMaterialPrice={updateMaterialPrice}
-                onUpdateMaterialWastePrice={updateMaterialWastePrice}
-                onUpdateServicePrice={updateServicePrice}
               />
 
               <Results

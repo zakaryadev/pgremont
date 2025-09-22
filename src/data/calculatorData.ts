@@ -33,7 +33,7 @@ export const materials: Record<string, Material> = {
   },
   bekprint: { 
     name: 'Бекпринт', 
-    widths: [1.52, 1.27, 1.07], 
+    widths: [0.9, 1.22, 1.52], 
     price: 120000,
     wastePrice: 35000
   }
