@@ -363,7 +363,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
 
           {/* Filter Controls */}
           {orders.length > 0 && (
-            <Card>
+            <Card className="w-[80%] mx-auto">
               <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
                 <CollapsibleTrigger asChild>
                   <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
@@ -502,7 +502,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
           )}
 
           {orders.length > 0 && (
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center w-[80%] mx-auto">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">
                   Jami: {orders.length} ta buyurtma
@@ -513,7 +513,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                   </Badge>
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button 
                   variant="default" 
                   size="sm"
@@ -525,7 +525,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                   ) : (
                     <Download className="h-4 w-4 mr-2" />
                   )}
-                  Excel yuklab olish
+                  Excel
                 </Button>
                 <Button 
                   variant="destructive" 
@@ -569,26 +569,26 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                 </Button>
               </div>
             ) : (
-              <div className="space-y-3 pb-1">
+              <div className="space-y-2 pb-1">
                 {filteredOrders.map((order) => (
                   <Card 
                     key={order.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className="cursor-pointer hover:shadow-md transition-shadow w-[80%] mx-auto"
                     onClick={() => handleLoadOrder(order)}
                   >
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-1 pt-2 px-2 sm:px-3">
                       <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <CardTitle className="text-lg">{order.name}</CardTitle>
-                          <CardDescription className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
-                              {formatDate(order.createdAt)}
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-xs sm:text-sm truncate">{order.name}</CardTitle>
+                          <CardDescription className="text-xs mt-0.5">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              <span className="truncate text-xs">{formatDate(order.createdAt)}</span>
                             </div>
                             {order.phone && (
-                              <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4" />
-                                {order.phone}
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Phone className="h-3 w-3" />
+                                <span className="truncate text-xs">{order.phone}</span>
                               </div>
                             )}
                           </CardDescription>
@@ -597,36 +597,36 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                           variant="ghost"
                           size="sm"
                           onClick={(e) => handleDeleteOrder(order.id, e)}
-                          className="text-destructive hover:text-destructive"
+                          className="text-destructive hover:text-destructive h-5 w-5 sm:h-6 sm:w-6 p-0 ml-1"
                           disabled={deletingId === order.id}
                         >
                           {deletingId === order.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3" />
                           )}
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="space-y-1">
-                          <p className="text-muted-foreground text-xs">Material</p>
-                          <p className="font-medium">{order.materials[order.state.selectedMaterial]?.name}</p>
+                    <CardContent className="pt-0 pb-2 px-2 sm:px-3">
+                      <div className="space-y-1 sm:grid sm:grid-cols-2 sm:gap-1 sm:space-y-0 text-xs">
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground text-xs">Material:</span>
+                          <span className="font-medium text-xs">{order.materials[order.state.selectedMaterial]?.name || 'Tanlanmagan'}</span>
                         </div>
-                        <div className="space-y-1">
-                          <p className="text-muted-foreground text-xs">Mahsulotlar</p>
-                          <p className="font-medium">{order.state.items.length} ta</p>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground text-xs">Mahsulotlar:</span>
+                          <span className="font-medium text-xs">{order.state.items.length} ta</span>
                         </div>
-                        <div className="space-y-1">
-                          <p className="text-muted-foreground text-xs">Xizmat</p>
-                          <p className="font-medium">{order.services[order.state.selectedService]?.name}</p>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground text-xs">Xizmat:</span>
+                          <span className="font-medium text-xs">{order.services[order.state.selectedService]?.name || 'Xizmat yo\'q'}</span>
                         </div>
-                        <div className="space-y-1">
-                          <p className="text-muted-foreground text-xs">Jami narx</p>
-                          <p className="font-medium text-primary">
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground text-xs">Narx:</span>
+                          <span className="font-medium text-primary text-xs">
                             {formatCurrency(order.results.totalCost)}
-                          </p>
+                          </span>
                         </div>
                       </div>
                     </CardContent>
