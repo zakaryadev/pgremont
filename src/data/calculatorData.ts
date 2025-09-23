@@ -44,29 +44,5 @@ export const services: Record<string, Service> = {
     name: 'Xizmat tanlanmagan', 
     price: 0, 
     type: 'fixed' 
-  },
-  install: { 
-    name: 'Установка', 
-    price: 25000, 
-    type: 'per_sqm',
-    materials: ['banner', 'holst'] // banner va holst uchun
-  },
-  install_rails: { 
-    name: 'Установка с рейками', 
-    price: 55000, 
-    type: 'per_sqm',
-    materials: ['banner', 'holst'] // banner va holst uchun
-  },
-  install_oracal: { 
-    name: 'Установка оракал', 
-    price: 45000, 
-    type: 'per_sqm',
-    materials: ['oracal', 'setka', 'prozrachka'] // oracal, setka va prozrachka uchun
-  },
-  install_dismantle: { 
-    name: 'Установка + Демонтаж', 
-    price: 60000, 
-    type: 'per_sqm',
-    materials: ['oracal', 'setka', 'prozrachka'] // oracal, setka va prozrachka uchun
-  },
+  }
 };

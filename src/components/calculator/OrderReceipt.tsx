@@ -315,25 +315,98 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         <div className="receipt-section">
           <div className="receipt-section-title">MAHSULOTLAR</div>
           <div className="receipt-items">
-            {order.state.items.map((item, index) => (
-              <div key={item.id} className="receipt-item">
-                <div className="receipt-row">
-                  <span className="receipt-row-label">{index + 1}. {item.name}</span>
+            {order.state.items.map((item, index) => {
+              // Beydjik ekanligini tekshirish
+              const isBadge = item.name.toLowerCase().includes('beydjik');
+              const isAcrylicLetters = item.name.toLowerCase().includes('akril');
+              
+              if (isBadge) {
+                // Beydjik uchun alohida ko'rsatish
+                return (
+                  <div key={item.id} className="receipt-item" style={{ backgroundColor: '#f0f9ff', border: '1px solid #0ea5e9' }}>
+                    <div className="receipt-row">
+                      <span className="receipt-row-label" style={{ color: '#0c4a6e', fontWeight: 'bold' }}>
+                        {index + 1}. {item.name}
+                      </span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="receipt-row-label" style={{ color: '#0c4a6e' }}>
+                        O'lcham: 7×4 cm (standart)
+                      </span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="receipt-row-label" style={{ color: '#0c4a6e' }}>
+                        Miqdor: {item.quantity} dona
+                      </span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="receipt-row-label" style={{ color: '#0c4a6e' }}>
+                        Bitta narx: {formatCurrency(item.materialPrice)}
+                      </span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="receipt-row-label" style={{ color: '#0c4a6e', fontWeight: 'bold' }}>
+                        Jami narx: {formatCurrency(item.quantity * item.materialPrice)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (isAcrylicLetters) {
+                // Akril harflar uchun alohida ko'rsatish
+                return (
+                  <div key={item.id} className="receipt-item" style={{ backgroundColor: '#f0fdf4', border: '1px solid #22c55e' }}>
+                    <div className="receipt-row">
+                      <span className="receipt-row-label" style={{ color: '#166534', fontWeight: 'bold' }}>
+                        {index + 1}. {item.name}
+                      </span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="receipt-row-label" style={{ color: '#166534' }}>
+                        Balandlik: {item.height} cm
+                      </span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="receipt-row-label" style={{ color: '#166534' }}>
+                        Harf soni: {item.quantity} ta
+                      </span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="receipt-row-label" style={{ color: '#166534' }}>
+                        1 cm narx: {formatCurrency(item.materialPrice)}
+                      </span>
+                    </div>
+                    <div className="receipt-row">
+                      <span className="receipt-row-label" style={{ color: '#166534', fontWeight: 'bold' }}>
+                        Jami narx: {formatCurrency(item.height * item.quantity * item.materialPrice)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Boshqa mahsulotlar uchun oddiy ko'rsatish
+              return (
+                <div key={item.id} className="receipt-item">
+                  <div className="receipt-row">
+                    <span className="receipt-row-label">{index + 1}. {item.name}</span>
+                  </div>
+                  <div className="receipt-row">
+                    <span className="receipt-row-label">O'lcham: {item.width}×{item.height} m</span>
+                  </div>
+                  <div className="receipt-row">
+                    <span className="receipt-row-label">Miqdor: {item.quantity} ta</span>
+                  </div>
+                  <div className="receipt-row">
+                    <span className="receipt-row-label">Maydon: {(item.width * item.height * item.quantity).toFixed(2)} m²</span>
+                  </div>
+                  <div className="receipt-row">
+                    <span className="receipt-row-label">Material eni: {item.materialWidth} m</span>
+                  </div>
                 </div>
-                <div className="receipt-row">
-                  <span className="receipt-row-label">O'lcham: {item.width}×{item.height} m</span>
-                </div>
-                <div className="receipt-row">
-                  <span className="receipt-row-label">Miqdor: {item.quantity} ta</span>
-                </div>
-                <div className="receipt-row">
-                  <span className="receipt-row-label">Maydon: {(item.width * item.height * item.quantity).toFixed(2)} m²</span>
-                </div>
-                <div className="receipt-row">
-                  <span className="receipt-row-label">Material eni: {item.materialWidth} m</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

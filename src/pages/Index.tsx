@@ -1,7 +1,27 @@
-import { PolygraphyCalculator } from "@/components/calculator/PolygraphyCalculator";
+import { useNavigate } from "react-router-dom";
+import { Navigation } from "@/components/Navigation";
 
 const Index = () => {
-  return <PolygraphyCalculator />;
+  const navigate = useNavigate();
+
+  const handleCalculatorChange = (calculator: string) => {
+    if (calculator === 'polygraphy') {
+      navigate('/polygraphy');
+    } else {
+      navigate(`/${calculator}`);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <Navigation 
+          activeCalculator=""
+          onCalculatorChange={handleCalculatorChange}
+        />
+      </div>
+    </div>
+  );
 };
 
 export default Index;

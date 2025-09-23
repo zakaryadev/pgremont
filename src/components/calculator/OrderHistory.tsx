@@ -34,6 +34,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   const [materialFilter, setMaterialFilter] = useState<string>('all');
   const [serviceFilter, setServiceFilter] = useState<string>('all');
   const [priceRangeFilter, setPriceRangeFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
+  const [productTypeFilter, setProductTypeFilter] = useState<'all' | 'polygraphy' | 'tablets' | 'badges'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -151,6 +152,37 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
         }
       }
 
+      // Product type filter
+      if (productTypeFilter !== 'all') {
+        const hasBadge = order.state.items.some(item => item.name.toLowerCase().includes('beydjik'));
+        const hasTablet = order.state.items.some(item => 
+          item.name.toLowerCase().includes('tablichka') || 
+          item.name.toLowerCase().includes('romark') ||
+          item.name.toLowerCase().includes('orgsteklo') ||
+          item.name.toLowerCase().includes('akril') ||
+          item.name.toLowerCase().includes('statuetka') ||
+          item.name.toLowerCase().includes('bolt')
+        );
+        const hasPolygraphy = order.state.items.some(item => 
+          item.name.toLowerCase().includes('banner') ||
+          item.name.toLowerCase().includes('oracal') ||
+          item.name.toLowerCase().includes('holst') ||
+          item.name.toLowerCase().includes('bekprint')
+        );
+
+        switch (productTypeFilter) {
+          case 'badges':
+            if (!hasBadge) return false;
+            break;
+          case 'tablets':
+            if (!hasTablet) return false;
+            break;
+          case 'polygraphy':
+            if (!hasPolygraphy) return false;
+            break;
+        }
+      }
+
       // Search query filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -161,7 +193,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
 
       return true;
     });
-  }, [orders, dateFilter, customStartDate, customEndDate, materialFilter, serviceFilter, priceRangeFilter, searchQuery]);
+  }, [orders, dateFilter, customStartDate, customEndDate, materialFilter, serviceFilter, priceRangeFilter, productTypeFilter, searchQuery]);
 
   const clearFilters = () => {
     setDateFilter('all');
@@ -170,6 +202,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
     setMaterialFilter('all');
     setServiceFilter('all');
     setPriceRangeFilter('all');
+    setProductTypeFilter('all');
     setSearchQuery('');
   };
 
@@ -403,6 +436,21 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
+                        <Label htmlFor="product-type-filter">Mahsulot turi</Label>
+                        <Select value={productTypeFilter} onValueChange={(value: any) => setProductTypeFilter(value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Mahsulot turini tanlang" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Barcha mahsulotlar</SelectItem>
+                            <SelectItem value="polygraphy">Poligrafiya</SelectItem>
+                            <SelectItem value="tablets">Tablichkalar</SelectItem>
+                            <SelectItem value="badges">Beydjiklar</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
                         <Label htmlFor="date-filter">Sana bo'yicha</Label>
                         <Select value={dateFilter} onValueChange={(value: any) => setDateFilter(value)}>
                           <SelectTrigger>
@@ -432,6 +480,13 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                             <SelectItem value="prozrachka">Прозрачный оракал</SelectItem>
                             <SelectItem value="holst">Холст</SelectItem>
                             <SelectItem value="bekprint">Бекпринт</SelectItem>
+                            <SelectItem value="romark">Romark tablichka</SelectItem>
+                            <SelectItem value="plexiglass">Orgsteklo (Plexiglass) tablichka</SelectItem>
+                            <SelectItem value="acrylic">Akril tablichka</SelectItem>
+                            <SelectItem value="badge">Beydjik (7x4 cm)</SelectItem>
+                            <SelectItem value="premium_badge">Premium beydjik (7x4 cm)</SelectItem>
+                            <SelectItem value="statue">Statuetka (Acrylic)</SelectItem>
+                            <SelectItem value="bolt">Distansion bolt</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -445,10 +500,6 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                           <SelectContent>
                             <SelectItem value="all">Barcha xizmatlar</SelectItem>
                             <SelectItem value="none">Xizmat yo'q</SelectItem>
-                            <SelectItem value="install">Установка</SelectItem>
-                            <SelectItem value="install_rails">Установка с рейками</SelectItem>
-                            <SelectItem value="install_oracal">Установка оракал</SelectItem>
-                            <SelectItem value="install_dismantle">Установка + Демонтаж</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -489,7 +540,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                       </div>
                     )}
                     
-                    {(dateFilter !== 'all' || materialFilter !== 'all' || serviceFilter !== 'all' || priceRangeFilter !== 'all' || searchQuery.trim()) && (
+                    {(dateFilter !== 'all' || materialFilter !== 'all' || serviceFilter !== 'all' || priceRangeFilter !== 'all' || productTypeFilter !== 'all' || searchQuery.trim()) && (
                       <div className="flex justify-end">
                         <Button
                           variant="outline"

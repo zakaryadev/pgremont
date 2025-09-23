@@ -10,12 +10,12 @@ import { OrderForm } from "./OrderForm";
 import { OrderHistory } from "./OrderHistory";
 import { ServiceVisibilityToggle } from "./ServiceVisibilityToggle";
 import { ItemVisibilityToggle } from "./ItemVisibilityToggle";
-import { materials as initialMaterials, services as initialServices } from "../../data/calculatorData";
+import { tableMaterials as initialMaterials, tableServices as initialServices } from "../../data/tableData";
 import { CalculatorState, Item, CalculationResults, Material, Service, ServiceVisibility, Order } from "../../types/calculator";
 import { useOrders } from "../../hooks/useOrders";
 import { useToast } from "../../hooks/use-toast";
 
-export function PolygraphyCalculator() {
+export function TabletCalculator() {
   const [materials, setMaterials] = useState(initialMaterials);
   const [services, setServices] = useState(initialServices);
   const [serviceVisibility, setServiceVisibility] = useState<ServiceVisibility>({});
@@ -23,8 +23,8 @@ export function PolygraphyCalculator() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [state, setState] = useState<CalculatorState>({
     items: [],
-    selectedMaterial: 'banner',
-    selectedWidth: 3.2,
+    selectedMaterial: 'romark',
+    selectedWidth: 0, // Tablitsalar uchun eni kerak
     selectedService: 'none',
   });
 
@@ -34,19 +34,11 @@ export function PolygraphyCalculator() {
   const currentMaterial = materials[state.selectedMaterial];
 
   const selectMaterial = (materialKey: string) => {
-    const material = materials[materialKey];
     setState(prev => ({
       ...prev,
       selectedMaterial: materialKey,
-      selectedWidth: material.widths[0], // Auto-select first width
+      selectedWidth: 0, // Tablichkalar uchun material eni yo'q
       selectedService: 'none', // Reset service when material changes
-    }));
-  };
-
-  const selectWidth = (width: number) => {
-    setState(prev => ({
-      ...prev,
-      selectedWidth: width,
     }));
   };
 
@@ -92,7 +84,6 @@ export function PolygraphyCalculator() {
       }
     }));
   };
-
 
   const updateServicePrice = (serviceKey: string, value: number) => {
     if (isNaN(value)) return;
@@ -160,26 +151,41 @@ export function PolygraphyCalculator() {
 
     // Only calculate for visible items
     state.items.filter(item => item.isVisible).forEach(item => {
-      // Pechat maydoni = item eni × item bo'yi × soni
-      const itemPrintArea = item.width * item.height * item.quantity;
+      // Mahsulot turini tekshirish
+      const isBadge = item.name.toLowerCase().includes('beydjik');
+      const isStatuetka = item.name.toLowerCase().includes('statuetka');
+      const isBolt = item.name.toLowerCase().includes('bolt');
+      
+      let itemPrintArea, itemMaterialUsed, itemMaterialCost;
+      
+      if (isBadge) {
+        // Beydjik uchun: narx soniga qarab hisoblanadi
+        itemPrintArea = 0.07 * 0.04 * item.quantity; // 7x4 cm = 0.07x0.04 m
+        itemMaterialUsed = itemPrintArea;
+        itemMaterialCost = item.quantity * item.materialPrice; // Soniga qarab narx
+      } else if (isStatuetka) {
+        // Statuetka uchun: faqat soni × narx (donasiga 200,000 so'm)
+        itemPrintArea = 0; // Maydon hisoblanmaydi
+        itemMaterialUsed = 0; // Material sarfi hisoblanmaydi
+        itemMaterialCost = item.quantity * item.materialPrice; // soni × narx
+      } else if (isBolt) {
+        // Bolt uchun: soni × narx
+        itemPrintArea = 0; // Maydon hisoblanmaydi
+        itemMaterialUsed = 0; // Material sarfi hisoblanmaydi
+        itemMaterialCost = item.quantity * item.materialPrice; // soni × narx
+      } else {
+        // Boshqa tablichkalar uchun: maydon bo'yicha hisoblash
+        itemPrintArea = item.width * item.height * item.quantity;
+        itemMaterialUsed = itemPrintArea;
+        itemMaterialCost = itemPrintArea * item.materialPrice;
+      }
+      
       totalPrintArea += itemPrintArea;
-
-      // Material sarfi = har bir item uchun o'z material eni × item bo'yi × soni
-      const itemMaterialUsed = item.materialWidth * item.height * item.quantity;
       totalMaterialUsed += itemMaterialUsed;
-
-      // Calculate material cost for this specific item
-      const itemMaterialCost = itemPrintArea * item.materialPrice;
       totalMaterialCost += itemMaterialCost;
 
-      // Calculate waste cost for this specific item
-      const itemWaste = Math.abs(itemMaterialUsed - itemPrintArea);
-      // Find the waste price for this specific material
-      const materialName = item.name.split(' ')[0];
-      const material = Object.values(materials).find(m => m.name === materialName);
-      const itemWastePrice = material?.wastePrice || currentMaterial.wastePrice;
-      const itemWasteCost = itemWaste * itemWastePrice;
-      totalWasteCost += itemWasteCost;
+      // Tablichkalar uchun chiqindi yo'q
+      // totalWasteCost = 0; // Chiqindi hisoblanmaydi
 
       // Calculate service cost for this specific item
       let itemServiceCost = 0;
@@ -211,20 +217,21 @@ export function PolygraphyCalculator() {
       totalServiceCost += itemServiceCost;
     });
 
-    const totalWaste = Math.abs(totalMaterialUsed - totalPrintArea);
-    const wastePercentage = totalMaterialUsed > 0 ? (totalWaste / totalMaterialUsed) * 100 : 0;
+    // Tablichkalar uchun chiqindi yo'q
+    const totalWaste = 0;
+    const wastePercentage = 0;
 
     const printCost = 0;
-    const totalCost = totalMaterialCost + printCost + totalWasteCost + totalServiceCost;
+    const totalCost = totalMaterialCost + printCost + totalServiceCost; // Chiqindi narxi qo'shilmaydi
 
     return {
       totalPrintArea,
       totalMaterialUsed,
-      totalWaste,
-      wastePercentage,
+      totalWaste: 0, // Tablichkalar uchun chiqindi yo'q
+      wastePercentage: 0, // Tablichkalar uchun chiqindi foizi yo'q
       materialCost: totalMaterialCost,
       printCost,
-      wasteCost: totalWasteCost,
+      wasteCost: 0, // Tablichkalar uchun chiqindi narxi yo'q
       serviceCost: totalServiceCost,
       totalCost,
     };
@@ -240,8 +247,9 @@ export function PolygraphyCalculator() {
               alt="TOGO GROUP Logo" 
               className="h-16 md:h-20 w-auto mb-4"
             />
+            <h1 className="text-3xl font-bold mb-2">Tablichkalar kalkulyatori</h1>
             <p className="text-lg text-muted-foreground">
-              Barcha turdagi bosma ishlar uchun to'liq hisob-kitob
+              Romark, orgsteklo, akril tablichkalar, beydjik, statuetka va boltlar uchun to'liq hisob-kitob
             </p>
           </div>
         </div>
@@ -256,24 +264,7 @@ export function PolygraphyCalculator() {
               onSelect={selectMaterial}
             />
 
-            <WidthSelector
-              widths={currentMaterial.widths}
-              selectedWidth={state.selectedWidth}
-              onSelect={selectWidth}
-            />
-
-            
-
-            {/* <ServiceVisibilityToggle
-              services={services}
-              visibility={serviceVisibility}
-              onToggleVisibility={toggleServiceVisibility}
-            /> */}
-
-            {/* <ItemVisibilityToggle
-              items={state.items}
-              onToggleVisibility={toggleItemVisibility}
-            /> */}
+            {/* Tablichkalar uchun material eni tanlash yo'q */}
 
             <OrderForm
               onSaveOrder={handleSaveOrder}
@@ -283,11 +274,12 @@ export function PolygraphyCalculator() {
           </div>
           <div className="xl:col-span-1 space-y-6">
           <ItemForm
-              selectedWidth={state.selectedWidth}
+              selectedWidth={0} // Tablichkalar uchun material eni yo'q
               materialPrice={currentMaterial.price}
               materialName={currentMaterial.name}
               selectedService={state.selectedService}
               onAddItem={addItem}
+              isTablet={false} // Tablichkalar uchun eni va balandlik kerak
             />
 
             <ServiceSelector
@@ -318,6 +310,7 @@ export function PolygraphyCalculator() {
                 items={state.items}
                 materialPrice={currentMaterial.price}
                 materials={materials}
+                isTablet={false} // Tablichkalar uchun eni va balandlik kerak
               />
             </div>
 

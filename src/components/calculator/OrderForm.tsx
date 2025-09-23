@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Save, History } from 'lucide-react';
 
 interface OrderFormProps {
-  onSaveOrder: (name: string, phone?: string) => void;
+  onSaveOrder: (orderData: { name: string; phone?: string }) => void;
   onShowHistory: () => void;
   disabled?: boolean;
 }
@@ -17,7 +17,7 @@ export function OrderForm({ onSaveOrder, onShowHistory, disabled }: OrderFormPro
 
   const handleSave = () => {
     if (orderName.trim()) {
-      onSaveOrder(orderName.trim(), phoneNumber.trim() || undefined);
+      onSaveOrder({ name: orderName.trim(), phone: phoneNumber.trim() || undefined });
       setOrderName('');
       setPhoneNumber('');
     }

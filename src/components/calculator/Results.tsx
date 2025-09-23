@@ -8,9 +8,10 @@ interface ResultsProps {
   items: Item[];
   materialPrice: number;
   materials: Record<string, { name: string; price: number; wastePrice: number }>;
+  isTablet?: boolean; // Tablichka uchun flag
 }
 
-export function Results({ results, items, materialPrice, materials }: ResultsProps) {
+export function Results({ results, items, materialPrice, materials, isTablet = false }: ResultsProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('uz-UZ', {
       minimumFractionDigits: 0,
@@ -38,11 +39,43 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
 
   // Calculate individual item details
   const getItemDetails = (item: Item, itemMaterialPrice: number) => {
-    const printArea = item.width * item.height * item.quantity;
-    const materialUsed = item.materialWidth * item.height * item.quantity;
+    // Mahsulot turini tekshirish
+    const isBadge = item.name.toLowerCase().includes('beydjik');
+    const isAcrylicLetters = item.name.toLowerCase().includes('akril');
+    const isStatuetka = item.name.toLowerCase().includes('statuetka');
+    const isBolt = item.name.toLowerCase().includes('bolt');
+    
+    let printArea, materialUsed, printCost;
+    
+    if (isBadge) {
+      // Beydjik uchun: soniga qarab hisoblash
+      printArea = 0.07 * 0.04 * item.quantity; // 7x4 cm = 0.07x0.04 m
+      materialUsed = printArea;
+      printCost = item.quantity * itemMaterialPrice; // Soniga qarab narx
+    } else if (isAcrylicLetters) {
+      // Akril harflar uchun: balandlik (cm) × harf soni × narx
+      printArea = 0; // Maydon hisoblanmaydi
+      materialUsed = 0; // Material sarfi hisoblanmaydi
+      printCost = item.height * item.quantity * itemMaterialPrice; // balandlik (cm) × harf soni × narx
+    } else if (isStatuetka) {
+      // Statuetka uchun: faqat soni × narx (donasiga 200,000 so'm)
+      printArea = 0; // Maydon hisoblanmaydi
+      materialUsed = 0; // Material sarfi hisoblanmaydi
+      printCost = item.quantity * itemMaterialPrice; // soni × narx
+    } else if (isBolt) {
+      // Bolt uchun: soni × narx
+      printArea = 0; // Maydon hisoblanmaydi
+      materialUsed = 0; // Material sarfi hisoblanmaydi
+      printCost = item.quantity * itemMaterialPrice; // soni × narx
+    } else {
+      // Boshqa mahsulotlar uchun: maydon bo'yicha hisoblash
+      printArea = item.width * item.height * item.quantity;
+      materialUsed = item.materialWidth * item.height * item.quantity;
+      printCost = printArea * itemMaterialPrice;
+    }
+    
     const waste = Math.abs(materialUsed - printArea);
     const wastePercentage = materialUsed > 0 ? (waste / materialUsed) * 100 : 0;
-    const printCost = printArea * itemMaterialPrice;
     const wastePrice = getItemMaterialWastePrice(item);
     const wasteCost = waste * wastePrice;
     const totalCost = printCost + wasteCost;
@@ -56,7 +89,11 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
       wasteCost,
       totalCost,
       materialPrice: itemMaterialPrice,
-      wastePrice: wastePrice
+      wastePrice: wastePrice,
+      isBadge, // Beydjik ekanligini qaytarish
+      isAcrylicLetters, // Akril harflar ekanligini qaytarish
+      isStatuetka, // Statuetka ekanligini qaytarish
+      isBolt // Bolt ekanligini qaytarish
     };
   };
 
@@ -69,6 +106,128 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
         {items.filter(item => item.isVisible).map((item, index) => {
           const itemMaterialPrice = getItemMaterialPrice(item);
           const details = getItemDetails(item, itemMaterialPrice);
+          
+          // Beydjik uchun alohida ko'rsatish
+          if (details.isBadge) {
+            return (
+              <div key={item.id} className="border rounded-lg p-3 bg-blue-50 border-blue-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-sm text-blue-800">{item.name}</span>
+                  <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                    {item.quantity} dona
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-blue-600">O'lcham:</span>
+                    <span className="text-blue-800">7×4 cm</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-600">Soni:</span>
+                    <span className="text-blue-800">{item.quantity} dona</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-600">Bitta narx:</span>
+                    <span className="text-blue-800">{formatCurrency(itemMaterialPrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-600 font-medium">Jami narx:</span>
+                    <span className="font-bold text-blue-900">{formatCurrency(details.totalCost)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // Akril harflar uchun alohida ko'rsatish
+          if (details.isAcrylicLetters) {
+            return (
+              <div key={item.id} className="border rounded-lg p-3 bg-green-50 border-green-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-sm text-green-800">{item.name}</span>
+                  <Badge variant="outline" className="bg-green-100 text-green-800">
+                    {item.quantity} harf
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-green-600">Balandlik:</span>
+                    <span className="text-green-800">{item.height} cm</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-green-600">Harf soni:</span>
+                    <span className="text-green-800">{item.quantity} ta</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-green-600">1 cm narx:</span>
+                    <span className="text-green-800">{formatCurrency(itemMaterialPrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-green-600 font-medium">Jami narx:</span>
+                    <span className="font-bold text-green-900">{formatCurrency(details.totalCost)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // Statuetka uchun alohida ko'rsatish
+          if (details.isStatuetka) {
+            return (
+              <div key={item.id} className="border rounded-lg p-3 bg-purple-50 border-purple-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-sm text-purple-800">{item.name}</span>
+                  <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                    {item.quantity} dona
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-purple-600">Soni:</span>
+                    <span className="text-purple-800">{item.quantity} dona</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-purple-600">Bitta narx:</span>
+                    <span className="text-purple-800">{formatCurrency(itemMaterialPrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-purple-600 font-medium">Jami narx:</span>
+                    <span className="font-bold text-purple-900">{formatCurrency(details.totalCost)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // Bolt uchun alohida ko'rsatish
+          if (details.isBolt) {
+            return (
+              <div key={item.id} className="border rounded-lg p-3 bg-orange-50 border-orange-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-sm text-orange-800">{item.name}</span>
+                  <Badge variant="outline" className="bg-orange-100 text-orange-800">
+                    {item.quantity} dona
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-orange-600">Soni:</span>
+                    <span className="text-orange-800">{item.quantity} dona</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-orange-600">Bitta narx:</span>
+                    <span className="text-orange-800">{formatCurrency(itemMaterialPrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-orange-600 font-medium">Jami narx:</span>
+                    <span className="font-bold text-orange-900">{formatCurrency(details.totalCost)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          
+          // Boshqa mahsulotlar uchun oddiy ko'rsatish
           return (
             <div key={item.id} className="border rounded-lg p-3 bg-muted/20">
               <div className="flex justify-between items-center mb-2">
@@ -109,8 +268,8 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
           <span className="font-semibold">{formatArea(results.totalMaterialUsed)}</span>
         </div>
         
-        {/* Material bo'yicha chiqindilar */}
-        {(() => {
+        {/* Material bo'yicha chiqindilar - tablichkalar uchun ko'rsatilmaydi */}
+        {!isTablet && (() => {
           const materialWasteMap = new Map();
           
           items.filter(item => item.isVisible).forEach(item => {
@@ -146,17 +305,20 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
           ));
         })()}
 
-        <div className="flex justify-between items-center">
-          <span className="text-destructive font-medium">Jami chiqindi (отход):</span>
-          <div className="text-right">
-            <span className="font-semibold text-destructive">
-              {formatArea(results.totalWaste)}
-            </span>
-            <Badge variant="destructive" className="ml-2">
-              {results.wastePercentage.toFixed(2)}%
-            </Badge>
+        {/* Tablichkalar uchun jami chiqindi ko'rsatilmaydi */}
+        {!isTablet && (
+          <div className="flex justify-between items-center">
+            <span className="text-destructive font-medium">Jami chiqindi (отход):</span>
+            <div className="text-right">
+              <span className="font-semibold text-destructive">
+                {formatArea(results.totalWaste)}
+              </span>
+              <Badge variant="destructive" className="ml-2">
+                {results.wastePercentage.toFixed(2)}%
+              </Badge>
+            </div>
           </div>
-        </div>
+        )}
         
         <Separator className="my-4" />
         
@@ -165,10 +327,13 @@ export function Results({ results, items, materialPrice, materials }: ResultsPro
           <span className="font-semibold">{formatCurrency(results.materialCost)}</span>
         </div>
         
-        <div className="flex justify-between items-center">
-          <span className="text-destructive font-medium">Chiqindi narxi:</span>
-          <span className="font-semibold text-destructive">{formatCurrency(results.wasteCost)}</span>
-        </div>
+        {/* Tablichkalar uchun chiqindi narxi ko'rsatilmaydi */}
+        {!isTablet && (
+          <div className="flex justify-between items-center">
+            <span className="text-destructive font-medium">Chiqindi narxi:</span>
+            <span className="font-semibold text-destructive">{formatCurrency(results.wasteCost)}</span>
+          </div>
+        )}
         
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Xizmat narxi:</span>
