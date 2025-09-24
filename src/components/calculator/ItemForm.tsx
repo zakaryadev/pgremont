@@ -31,6 +31,11 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
   const isTabletMaterial = materialName.toLowerCase().includes('tablichka') || materialName.toLowerCase().includes('romark') || materialName.toLowerCase().includes('orgsteklo');
   const isStatuetka = materialName.toLowerCase().includes('statuetka');
   const isBolt = materialName.toLowerCase().includes('bolt');
+  
+  // CM dan M ga aylantirish kerak bo'lgan tablichka materiallari
+  const isCmToMTablet = materialName.toLowerCase().includes('romark tablichka') || 
+                       materialName.toLowerCase().includes('akril (alyukabond) tablichka') || 
+                       materialName.toLowerCase().includes('akril tablichka');
 
   // Matn kiritilganda harf sonini avtomatik hisoblash
   const handleTextChange = (text: string) => {
@@ -60,9 +65,16 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
       itemHeight = parseFloat(height);
       itemQuantity = parseInt(quantity);
     } else if (isTabletMaterial) {
-      // Tablichkalar uchun: eni va bo'yi (m)
-      itemWidth = parseFloat(width);
-      itemHeight = parseFloat(height);
+      // Tablichkalar uchun: eni va bo'yi
+      if (isCmToMTablet) {
+        // CM dan M ga aylantirish: CM ÷ 100 = M
+        itemWidth = parseFloat(width) / 100;
+        itemHeight = parseFloat(height) / 100;
+      } else {
+        // Boshqa tablichkalar uchun: eni va bo'yi (m)
+        itemWidth = parseFloat(width);
+        itemHeight = parseFloat(height);
+      }
       itemQuantity = parseInt(quantity);
     } else if (isStatuetka) {
       // Statuetka uchun: faqat soni × narx (donasiga 200,000 so'm)
@@ -165,14 +177,14 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
             {!isBolt && !isStatuetka && !isAcrylicLetters && !isVolumetricLetters && (
               <div>
                 <Label htmlFor="item-width" className="text-sm font-medium text-muted-foreground">
-                  Ishning eni (m)
+                  Ishning eni {isCmToMTablet ? "(cm)" : "(m)"}
                 </Label>
                 <Input
                   id="item-width"
                   type="number"
                   value={width}
                   onChange={(e) => setWidth(e.target.value)}
-                  placeholder="Masalan: 1.5"
+                  placeholder={isCmToMTablet ? "Masalan: 150" : "Masalan: 1.5"}
                   step="0.01"
                   className="mt-1"
                   required
@@ -183,14 +195,14 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
             {!isStatuetka && !isBolt && (
               <div>
                 <Label htmlFor="item-height" className="text-sm font-medium text-muted-foreground">
-                  {(isAcrylicLetters || isVolumetricLetters) ? "Harfning bo'yi (cm)" : "Ishning bo'yi (m)"}
+                  {(isAcrylicLetters || isVolumetricLetters) ? "Harfning bo'yi (cm)" : `Ishning bo'yi ${isCmToMTablet ? "(cm)" : "(m)"}`}
                 </Label>
                 <Input
                   id="item-height"
                   type="number"
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  placeholder={(isAcrylicLetters || isVolumetricLetters) ? "Masalan: 50" : "Masalan: 2.0"}
+                  placeholder={(isAcrylicLetters || isVolumetricLetters) ? "Masalan: 50" : (isCmToMTablet ? "Masalan: 200" : "Masalan: 2.0")}
                   step={(isAcrylicLetters || isVolumetricLetters) ? "1" : "0.01"}
                   className="mt-1"
                   required
