@@ -10,6 +10,7 @@ import { OrderForm } from "./OrderForm";
 import { OrderHistory } from "./OrderHistory";
 import { ServiceVisibilityToggle } from "./ServiceVisibilityToggle";
 import { ItemVisibilityToggle } from "./ItemVisibilityToggle";
+import { DiscountInput } from "./DiscountInput";
 import { tableMaterials as initialMaterials, tableServices as initialServices } from "../../data/tableData";
 import { CalculatorState, Item, CalculationResults, Material, Service, ServiceVisibility, Order } from "../../types/calculator";
 import { useOrders } from "../../hooks/useOrders";
@@ -26,6 +27,7 @@ export function TabletCalculator() {
     selectedMaterial: 'romark',
     selectedWidth: 0, // Tablitsalar uchun eni kerak
     selectedService: 'none',
+    discountPercentage: 0,
   });
 
   const { saveOrder, refreshOrders } = useOrders();
@@ -142,6 +144,13 @@ export function TabletCalculator() {
     });
   };
 
+  const handleDiscountChange = (percentage: number) => {
+    setState(prev => ({
+      ...prev,
+      discountPercentage: percentage,
+    }));
+  };
+
   const results = useMemo((): CalculationResults => {
     let totalPrintArea = 0;
     let totalMaterialUsed = 0;
@@ -223,6 +232,10 @@ export function TabletCalculator() {
 
     const printCost = 0;
     const totalCost = totalMaterialCost + printCost + totalServiceCost; // Chiqindi narxi qo'shilmaydi
+    
+    // Calculate discount
+    const discountAmount = (totalCost * state.discountPercentage) / 100;
+    const finalCost = totalCost - discountAmount;
 
     return {
       totalPrintArea,
@@ -234,6 +247,8 @@ export function TabletCalculator() {
       wasteCost: 0, // Tablichkalar uchun chiqindi narxi yo'q
       serviceCost: totalServiceCost,
       totalCost,
+      discountAmount,
+      finalCost,
     };
   }, [state, currentMaterial, services]);
 
@@ -265,6 +280,11 @@ export function TabletCalculator() {
             />
 
             {/* Tablichkalar uchun material eni tanlash yo'q */}
+
+            <DiscountInput
+              discountPercentage={state.discountPercentage}
+              onDiscountChange={handleDiscountChange}
+            />
 
             <OrderForm
               onSaveOrder={handleSaveOrder}

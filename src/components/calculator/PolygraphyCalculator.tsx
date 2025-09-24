@@ -10,6 +10,7 @@ import { OrderForm } from "./OrderForm";
 import { OrderHistory } from "./OrderHistory";
 import { ServiceVisibilityToggle } from "./ServiceVisibilityToggle";
 import { ItemVisibilityToggle } from "./ItemVisibilityToggle";
+import { DiscountInput } from "./DiscountInput";
 import { materials as initialMaterials, services as initialServices } from "../../data/calculatorData";
 import { CalculatorState, Item, CalculationResults, Material, Service, ServiceVisibility, Order } from "../../types/calculator";
 import { useOrders } from "../../hooks/useOrders";
@@ -26,6 +27,7 @@ export function PolygraphyCalculator() {
     selectedMaterial: 'banner',
     selectedWidth: 3.2,
     selectedService: 'none',
+    discountPercentage: 0,
   });
 
   const { saveOrder, refreshOrders } = useOrders();
@@ -151,6 +153,13 @@ export function PolygraphyCalculator() {
     });
   };
 
+  const handleDiscountChange = (percentage: number) => {
+    setState(prev => ({
+      ...prev,
+      discountPercentage: percentage,
+    }));
+  };
+
   const results = useMemo((): CalculationResults => {
     let totalPrintArea = 0;
     let totalMaterialUsed = 0;
@@ -216,6 +225,10 @@ export function PolygraphyCalculator() {
 
     const printCost = 0;
     const totalCost = totalMaterialCost + printCost + totalWasteCost + totalServiceCost;
+    
+    // Calculate discount
+    const discountAmount = (totalCost * state.discountPercentage) / 100;
+    const finalCost = totalCost - discountAmount;
 
     return {
       totalPrintArea,
@@ -227,6 +240,8 @@ export function PolygraphyCalculator() {
       wasteCost: totalWasteCost,
       serviceCost: totalServiceCost,
       totalCost,
+      discountAmount,
+      finalCost,
     };
   }, [state, currentMaterial, services]);
 
@@ -274,6 +289,11 @@ export function PolygraphyCalculator() {
               items={state.items}
               onToggleVisibility={toggleItemVisibility}
             /> */}
+
+            <DiscountInput
+              discountPercentage={state.discountPercentage}
+              onDiscountChange={handleDiscountChange}
+            />
 
             <OrderForm
               onSaveOrder={handleSaveOrder}

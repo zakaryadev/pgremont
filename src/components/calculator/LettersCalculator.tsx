@@ -12,6 +12,7 @@ import { Results } from './Results';
 import { PriceList } from './PriceList';
 import { OrderForm } from './OrderForm';
 import { OrderHistory } from './OrderHistory';
+import { DiscountInput } from './DiscountInput';
 import { useOrders } from '../../hooks/useOrders';
 import { CalculatorState, Item, CalculationResults, Order } from '../../types/calculator';
 import { letterMaterials, letterServices } from '../../data/letterData';
@@ -22,6 +23,7 @@ export function LettersCalculator() {
     selectedMaterial: 'volumetric_no_led',
     selectedWidth: 0, // Bukvalar uchun eni kerak emas
     selectedService: 'none',
+    discountPercentage: 0,
   });
 
   const [materials, setMaterials] = useState(letterMaterials);
@@ -118,6 +120,7 @@ export function LettersCalculator() {
         selectedMaterial: 'volumetric_no_led',
         selectedWidth: 0,
         selectedService: 'none',
+        discountPercentage: 0,
       });
     } catch (error) {
       console.error('Failed to save order:', error);
@@ -129,6 +132,13 @@ export function LettersCalculator() {
     setMaterials(order.materials);
     setServices(order.services);
     setShowOrderHistory(false);
+  };
+
+  const handleDiscountChange = (percentage: number) => {
+    setState(prev => ({
+      ...prev,
+      discountPercentage: percentage,
+    }));
   };
 
   const results = useMemo((): CalculationResults => {
@@ -185,6 +195,10 @@ export function LettersCalculator() {
 
     const printCost = 0;
     const totalCost = totalMaterialCost; // Faqat material narxi
+    
+    // Calculate discount
+    const discountAmount = (totalCost * state.discountPercentage) / 100;
+    const finalCost = totalCost - discountAmount;
 
     return {
       totalPrintArea,
@@ -196,6 +210,8 @@ export function LettersCalculator() {
       wasteCost: 0, // Bukvalar uchun chiqindi narxi yo'q
       serviceCost: totalServiceCost,
       totalCost,
+      discountAmount,
+      finalCost,
     };
   }, [state, currentMaterial, services]);
 
@@ -223,6 +239,11 @@ export function LettersCalculator() {
               selectedMaterial={state.selectedMaterial}
               onSelect={selectMaterial}
             />
+            <DiscountInput
+              discountPercentage={state.discountPercentage}
+              onDiscountChange={handleDiscountChange}
+            />
+
             <OrderForm
               onSaveOrder={handleSaveOrder}
               onShowHistory={() => setShowOrderHistory(true)}

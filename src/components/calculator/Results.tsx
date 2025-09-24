@@ -387,9 +387,24 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
         
         <Separator className="border-dashed my-4" />
         
+        <div className="flex justify-between items-center">
+          <span className="text-muted-foreground">Jami narx:</span>
+          <span className="font-semibold">{formatCurrency(results.totalCost)}</span>
+        </div>
+        
+        {/* Skidka ko'rsatish */}
+        {results.discountAmount > 0 && (
+          <div className="flex justify-between items-center">
+            <span className="text-green-600 font-medium">Skidka:</span>
+            <span className="font-semibold text-green-600">-{formatCurrency(results.discountAmount)}</span>
+          </div>
+        )}
+        
+        <Separator className="border-dashed my-4" />
+        
         <div className="flex justify-between items-center text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          <span>JAMI NARX:</span>
-          <span>{formatCurrency(results.totalCost)}</span>
+          <span>YAKUNIY NARX:</span>
+          <span>{formatCurrency(results.finalCost)}</span>
         </div>
       </div>
     </Card>

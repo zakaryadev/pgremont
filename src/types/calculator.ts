@@ -30,6 +30,7 @@ export interface CalculatorState {
   selectedMaterial: string;
   selectedWidth: number;
   selectedService: string;
+  discountPercentage: number; // Skidka foizi
 }
 
 export interface CalculationResults {
@@ -42,6 +43,8 @@ export interface CalculationResults {
   wasteCost: number;
   serviceCost: number;
   totalCost: number;
+  discountAmount: number; // Skidka summasi
+  finalCost: number; // Skidka qo'llangandan keyingi yakuniy narx
 }
 
 export interface Order {

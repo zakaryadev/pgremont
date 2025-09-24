@@ -354,6 +354,17 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
 
   const handleDeleteOrder = async (orderId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      'Bu buyurtmani o\'chirishni xohlaysizmi?\n\n' +
+      'Bu amalni bekor qilib bo\'lmaydi!'
+    );
+    
+    if (!confirmed) {
+      return; // User cancelled deletion
+    }
+    
     try {
       setDeletingId(orderId);
       await deleteOrder(orderId);
@@ -365,6 +376,18 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   };
 
   const handleClearAllOrders = async () => {
+    // Show confirmation dialog for clearing all orders
+    const confirmed = window.confirm(
+      'BARCHA BUYURTMALARNI O\'CHIRISHNI XOHLAYSIZMI?\n\n' +
+      'Bu amal barcha saqlangan buyurtmalarni butunlay o\'chiradi!\n' +
+      'Bu amalni bekor qilib bo\'lmaydi!\n\n' +
+      'Davom etishni xohlaysizmi?'
+    );
+    
+    if (!confirmed) {
+      return; // User cancelled
+    }
+    
     try {
       setClearing(true);
       await clearAllOrders();
@@ -745,8 +768,13 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                         <div className="flex flex-col">
                           <span className="text-muted-foreground text-xs">Narx:</span>
                           <span className="font-medium text-primary text-xs">
-                            {formatCurrency(order.results.totalCost)}
+                            {formatCurrency(order.results.finalCost)}
                           </span>
+                          {order.results.discountAmount > 0 && (
+                            <span className="text-green-600 text-xs">
+                              (Skidka: {order.state.discountPercentage}%)
+                            </span>
+                          )}
                         </div>
                       </div>
                     </CardContent>

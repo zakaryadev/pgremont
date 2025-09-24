@@ -452,8 +452,25 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
 
         <div className="receipt-total">
           <div className="receipt-row">
-            <span className="receipt-row-label">JAMI:</span>
+            <span className="receipt-row-label">Jami narx:</span>
             <span className="receipt-row-value">{formatCurrency(order.results.totalCost)}</span>
+          </div>
+          
+          {/* Skidka ko'rsatish */}
+          {order.results.discountAmount > 0 && (
+            <div className="receipt-row">
+              <span className="receipt-row-label">Skidka ({order.state.discountPercentage}%):</span>
+              <span className="receipt-row-value" style={{ color: '#16a34a' }}>
+                -{formatCurrency(order.results.discountAmount)}
+              </span>
+            </div>
+          )}
+          
+          <div className="receipt-row" style={{ borderTop: '2px solid #000', paddingTop: '8px', marginTop: '8px' }}>
+            <span className="receipt-row-label" style={{ fontWeight: 'bold', fontSize: '16px' }}>YAKUNIY NARX:</span>
+            <span className="receipt-row-value" style={{ fontWeight: 'bold', fontSize: '16px' }}>
+              {formatCurrency(order.results.finalCost)}
+            </span>
           </div>
         </div>
 
