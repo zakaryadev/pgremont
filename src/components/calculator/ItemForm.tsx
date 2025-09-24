@@ -20,14 +20,25 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
   const [height, setHeight] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("1");
   const [letterCount, setLetterCount] = useState<string>("1"); // Bukvalar uchun harf soni
+  const [textInput, setTextInput] = useState<string>(""); // Matn kiritish uchun
   const { toast } = useToast();
 
   // Material turini aniqlash
   const isBadge = materialName.toLowerCase().includes('beydjik');
   const isAcrylicLetters = materialName.toLowerCase().includes('akril') && isTablet;
+  const isVolumetricLetters = materialName.toLowerCase().includes('обьемная буква') || materialName.toLowerCase().includes('volumetric');
+  const isLightBox = materialName.toLowerCase().includes('световой короб') || materialName.toLowerCase().includes('light box');
   const isTabletMaterial = materialName.toLowerCase().includes('tablichka') || materialName.toLowerCase().includes('romark') || materialName.toLowerCase().includes('orgsteklo');
   const isStatuetka = materialName.toLowerCase().includes('statuetka');
   const isBolt = materialName.toLowerCase().includes('bolt');
+
+  // Matn kiritilganda harf sonini avtomatik hisoblash
+  const handleTextChange = (text: string) => {
+    setTextInput(text);
+    // Bo'sh joylarni olib tashlash va harf sonini hisoblash
+    const cleanText = text.replace(/\s/g, '');
+    setLetterCount(cleanText.length.toString());
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,11 +49,16 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
       itemWidth = 0.07;
       itemHeight = 0.04;
       itemQuantity = parseInt(quantity);
-    } else if (isAcrylicLetters) {
-      // Akril harflar uchun: bo'yi (cm) × harf soni
+    } else if (isAcrylicLetters || isVolumetricLetters) {
+      // Akril harflar va ob'emli harflar uchun: bo'yi (cm) × harf soni
       itemWidth = 0;
       itemHeight = parseFloat(height); // cm da saqlash, m ga aylantirmaslik
       itemQuantity = parseInt(letterCount); // harf soni
+    } else if (isLightBox) {
+      // Light box uchun: eni (m) × bo'yi (m) × soni
+      itemWidth = parseFloat(width);
+      itemHeight = parseFloat(height);
+      itemQuantity = parseInt(quantity);
     } else if (isTabletMaterial) {
       // Tablichkalar uchun: eni va bo'yi (m)
       itemWidth = parseFloat(width);
@@ -68,7 +84,7 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
     if (isNaN(itemQuantity) || itemQuantity <= 0) {
       toast({
         title: "Xato",
-        description: isAcrylicLetters ? "Iltimos, harf sonini to'g'ri kiriting." : "Iltimos, miqdorni to'g'ri kiriting.",
+        description: (isAcrylicLetters || isVolumetricLetters) ? "Iltimos, harf sonini to'g'ri kiriting." : "Iltimos, miqdorni to'g'ri kiriting.",
         variant: "destructive",
       });
       return;
@@ -78,14 +94,14 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
     if (!isBadge && !isBolt && !isStatuetka && (isNaN(itemHeight) || itemHeight <= 0)) {
       toast({
         title: "Xato",
-        description: isAcrylicLetters ? "Iltimos, harfning bo'yi maydoniga to'g'ri qiymat kiriting." : "Iltimos, bo'yi maydoniga to'g'ri qiymat kiriting.",
+        description: (isAcrylicLetters || isVolumetricLetters) ? "Iltimos, harfning bo'yi maydoniga to'g'ri qiymat kiriting." : "Iltimos, bo'yi maydoniga to'g'ri qiymat kiriting.",
         variant: "destructive",
       });
       return;
     }
 
-    // Tablichkalar uchun eni tekshiruvi
-    if (!isBadge && !isAcrylicLetters && !isBolt && !isStatuetka && (isNaN(itemWidth) || itemWidth <= 0)) {
+    // Tablichkalar va light box uchun eni tekshiruvi
+    if (!isBadge && !isAcrylicLetters && !isVolumetricLetters && !isBolt && !isStatuetka && (isNaN(itemWidth) || itemWidth <= 0)) {
       toast({
         title: "Xato",
         description: "Iltimos, eni maydoniga to'g'ri qiymat kiriting.",
@@ -112,17 +128,18 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
     });
     
     if (!isBadge) {
-      if (!isAcrylicLetters && !isBolt && !isStatuetka) {
+      if (!isAcrylicLetters && !isVolumetricLetters && !isBolt && !isStatuetka) {
         setWidth("");
       }
       if (!isBolt && !isStatuetka) {
         setHeight("");
       }
     }
-    if (!isAcrylicLetters) {
+    if (!isAcrylicLetters && !isVolumetricLetters) {
       setQuantity("1");
     }
     setLetterCount("1");
+    setTextInput(""); // Matn maydonini tozalash
     
     toast({
       title: "Muvaffaqiyat",
@@ -144,8 +161,8 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
         {/* Beydjik uchun o'lcham maydonlari ko'rsatilmaydi */}
         {!isBadge && (
           <>
-            {/* Eni maydoni - boltlar va statuetka uchun ko'rsatilmaydi */}
-            {!isBolt && !isStatuetka && !isAcrylicLetters && (
+            {/* Eni maydoni - boltlar, statuetka va harflar uchun ko'rsatilmaydi */}
+            {!isBolt && !isStatuetka && !isAcrylicLetters && !isVolumetricLetters && (
               <div>
                 <Label htmlFor="item-width" className="text-sm font-medium text-muted-foreground">
                   Ishning eni (m)
@@ -166,15 +183,15 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
             {!isStatuetka && (
               <div>
                 <Label htmlFor="item-height" className="text-sm font-medium text-muted-foreground">
-                  {isAcrylicLetters ? "Harfning bo'yi (cm)" : "Ishning bo'yi (m)"}
+                  {(isAcrylicLetters || isVolumetricLetters) ? "Harfning bo'yi (cm)" : "Ishning bo'yi (m)"}
                 </Label>
                 <Input
                   id="item-height"
                   type="number"
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  placeholder={isAcrylicLetters ? "Masalan: 50" : "Masalan: 2.0"}
-                  step={isAcrylicLetters ? "1" : "0.01"}
+                  placeholder={(isAcrylicLetters || isVolumetricLetters) ? "Masalan: 50" : "Masalan: 2.0"}
+                  step={(isAcrylicLetters || isVolumetricLetters) ? "1" : "0.01"}
                   className="mt-1"
                   required
                 />
@@ -195,8 +212,28 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
           </div>
         )}
         
-          {/* Akril harflar uchun harf soni */}
-          {isAcrylicLetters && (
+          {/* Akril harflar va ob'emli harflar uchun matn kiritish */}
+          {(isAcrylicLetters || isVolumetricLetters) && (
+            <div>
+              <Label htmlFor="item-text" className="text-sm font-medium text-muted-foreground">
+                Matn kiritish (ixtiyoriy)
+              </Label>
+              <Input
+                id="item-text"
+                type="text"
+                value={textInput}
+                onChange={(e) => handleTextChange(e.target.value)}
+                placeholder="Masalan: MARKET"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Matn kiritilsa, harf soni avtomatik hisoblanadi
+              </p>
+            </div>
+          )}
+
+          {/* Akril harflar va ob'emli harflar uchun harf soni */}
+          {(isAcrylicLetters || isVolumetricLetters) && (
             <div>
               <Label htmlFor="item-letter-count" className="text-sm font-medium text-muted-foreground">
                 Harf soni
@@ -215,7 +252,7 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
           )}
 
           {/* Boshqa mahsulotlar uchun soni */}
-          {!isAcrylicLetters && (
+          {!isAcrylicLetters && !isVolumetricLetters && (
             <div>
               <Label htmlFor="item-quantity" className="text-sm font-medium text-muted-foreground">
                 Soni (dona)

@@ -34,7 +34,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   const [materialFilter, setMaterialFilter] = useState<string>('all');
   const [serviceFilter, setServiceFilter] = useState<string>('all');
   const [priceRangeFilter, setPriceRangeFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
-  const [productTypeFilter, setProductTypeFilter] = useState<'all' | 'polygraphy' | 'tablets' | 'badges'>('all');
+  const [productTypeFilter, setProductTypeFilter] = useState<'all' | 'polygraphy' | 'tablets' | 'badges' | 'letters'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -154,7 +154,12 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
 
       // Product type filter
       if (productTypeFilter !== 'all') {
-        const hasBadge = order.state.items.some(item => item.name.toLowerCase().includes('beydjik'));
+        const hasBadge = order.state.items.some(item => item.name.toLowerCase().includes('beydjik')) ||
+        // Check if the selected material is a badge material
+        (order.state.selectedMaterial && (
+          order.state.selectedMaterial === 'badge' ||
+          order.state.selectedMaterial === 'premium_badge'
+        ));
         const hasTablet = order.state.items.some(item => 
           item.name.toLowerCase().includes('tablichka') || 
           item.name.toLowerCase().includes('romark') ||
@@ -162,13 +167,47 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
           item.name.toLowerCase().includes('akril') ||
           item.name.toLowerCase().includes('statuetka') ||
           item.name.toLowerCase().includes('bolt')
-        );
+        ) ||
+        // Check if the selected material is a tablet material
+        (order.state.selectedMaterial && (
+          order.state.selectedMaterial === 'romark' ||
+          order.state.selectedMaterial === 'plexiglass' ||
+          order.state.selectedMaterial === 'acrylic' ||
+          order.state.selectedMaterial === 'statue' ||
+          order.state.selectedMaterial === 'bolt'
+        ));
         const hasPolygraphy = order.state.items.some(item => 
           item.name.toLowerCase().includes('banner') ||
           item.name.toLowerCase().includes('oracal') ||
           item.name.toLowerCase().includes('holst') ||
           item.name.toLowerCase().includes('bekprint')
-        );
+        ) || 
+        // Check if the selected material is a polygraphy material
+        (order.state.selectedMaterial && (
+          order.state.selectedMaterial === 'banner' ||
+          order.state.selectedMaterial === 'oracal' ||
+          order.state.selectedMaterial === 'setka' ||
+          order.state.selectedMaterial === 'prozrachka' ||
+          order.state.selectedMaterial === 'holst' ||
+          order.state.selectedMaterial === 'bekprint'
+        ));
+        const hasLetters = order.state.items.some(item => 
+          item.name.toLowerCase().includes('обьемная буква') ||
+          item.name.toLowerCase().includes('volumetric') ||
+          item.name.toLowerCase().includes('akril') && item.name.toLowerCase().includes('harf') ||
+          item.name.toLowerCase().includes('световой короб') ||
+          item.name.toLowerCase().includes('light box')
+        ) ||
+        // Check if the selected material is a volumetric letter material or light box
+        (order.state.selectedMaterial && (
+          order.state.selectedMaterial === 'volumetric_no_led' ||
+          order.state.selectedMaterial === 'volumetric_simple' ||
+          order.state.selectedMaterial === 'volumetric_mesh' ||
+          order.state.selectedMaterial === 'volumetric_contour' ||
+          order.state.selectedMaterial === 'volumetric_acrylic_border' ||
+          order.state.selectedMaterial === 'volumetric_dotted' ||
+          order.state.selectedMaterial === 'light_box'
+        ));
 
         switch (productTypeFilter) {
           case 'badges':
@@ -179,6 +218,9 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
             break;
           case 'polygraphy':
             if (!hasPolygraphy) return false;
+            break;
+          case 'letters':
+            if (!hasLetters) return false;
             break;
         }
       }
@@ -446,6 +488,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                             <SelectItem value="polygraphy">Poligrafiya</SelectItem>
                             <SelectItem value="tablets">Tablichkalar</SelectItem>
                             <SelectItem value="badges">Beydjiklar</SelectItem>
+                            <SelectItem value="letters">Harflar (Bukvalar)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -483,6 +526,13 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                             <SelectItem value="romark">Romark tablichka</SelectItem>
                             <SelectItem value="plexiglass">Orgsteklo (Plexiglass) tablichka</SelectItem>
                             <SelectItem value="acrylic">Akril tablichka</SelectItem>
+                            <SelectItem value="volumetric_no_led">Обьемная буква (Без диод)</SelectItem>
+                            <SelectItem value="volumetric_simple">Обьемная буква (Простой)</SelectItem>
+                            <SelectItem value="volumetric_mesh">Обьемная буква (Сеточний)</SelectItem>
+                            <SelectItem value="volumetric_contour">Обьемная буква (Контройорный)</SelectItem>
+                            <SelectItem value="volumetric_acrylic_border">Обьемная буква (Борт акрил)</SelectItem>
+                            <SelectItem value="volumetric_dotted">Обьемная буква (Точечные)</SelectItem>
+                            <SelectItem value="light_box">Световой короб</SelectItem>
                             <SelectItem value="badge">Beydjik (7x4 cm)</SelectItem>
                             <SelectItem value="premium_badge">Premium beydjik (7x4 cm)</SelectItem>
                             <SelectItem value="statue">Statuetka (Acrylic)</SelectItem>

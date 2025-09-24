@@ -19,7 +19,7 @@ import { letterMaterials, letterServices } from '../../data/letterData';
 export function LettersCalculator() {
   const [state, setState] = useState<CalculatorState>({
     items: [],
-    selectedMaterial: 'acrylic_letters',
+    selectedMaterial: 'volumetric_no_led',
     selectedWidth: 0, // Bukvalar uchun eni kerak emas
     selectedService: 'none',
   });
@@ -115,7 +115,7 @@ export function LettersCalculator() {
       // Reset calculator
       setState({
         items: [],
-        selectedMaterial: 'acrylic_letters',
+        selectedMaterial: 'volumetric_no_led',
         selectedWidth: 0,
         selectedService: 'none',
       });
@@ -139,23 +139,44 @@ export function LettersCalculator() {
     let totalWasteCost = 0;
 
     state.items.filter(item => item.isVisible).forEach(item => {
-      // Bukvalar uchun: balandlik(cm) × soni × narx
-      const itemPrintArea = 0; // Maydon hisoblanmaydi
-      totalPrintArea += itemPrintArea;
+      // Light box uchun: eni(m) × bo'yi(m) × soni × narx per m²
+      const isLightBox = item.name.toLowerCase().includes('световой короб') || item.name.toLowerCase().includes('light box');
+      
+      if (isLightBox) {
+        // Light box uchun maydon bo'yicha hisoblash
+        const itemPrintArea = item.width * item.height * item.quantity;
+        totalPrintArea += itemPrintArea;
+        
+        const itemMaterialUsed = itemPrintArea; // Light box uchun material sarfi = maydon
+        totalMaterialUsed += itemMaterialUsed;
+        
+        // Light box uchun: eni(m) × bo'yi(m) × soni × narx per m²
+        const itemMaterialCost = itemPrintArea * item.materialPrice;
+        totalMaterialCost += itemMaterialCost;
+        
+        // Light box uchun chiqindi yo'q
+        const itemWaste = 0;
+        const itemWasteCost = 0;
+        totalWasteCost += itemWasteCost;
+      } else {
+        // Bukvalar uchun: balandlik(cm) × soni × narx
+        const itemPrintArea = 0; // Maydon hisoblanmaydi
+        totalPrintArea += itemPrintArea;
 
-      const itemMaterialUsed = 0; // Material sarfi hisoblanmaydi
-      totalMaterialUsed += itemMaterialUsed;
+        const itemMaterialUsed = 0; // Material sarfi hisoblanmaydi
+        totalMaterialUsed += itemMaterialUsed;
 
-      // Bukvalar uchun: balandlik(cm) × soni × narx
-      const itemMaterialCost = item.height * item.quantity * item.materialPrice;
-      totalMaterialCost += itemMaterialCost;
+        // Bukvalar uchun: balandlik(cm) × soni × narx
+        const itemMaterialCost = item.height * item.quantity * item.materialPrice;
+        totalMaterialCost += itemMaterialCost;
 
-      // Bukvalar uchun chiqindi yo'q
-      const itemWaste = 0;
-      const itemWasteCost = 0;
-      totalWasteCost += itemWasteCost;
+        // Bukvalar uchun chiqindi yo'q
+        const itemWaste = 0;
+        const itemWasteCost = 0;
+        totalWasteCost += itemWasteCost;
+      }
 
-      // Bukvalar uchun xizmat narxi yo'q
+      // Bukvalar va light box uchun xizmat narxi yo'q
       totalServiceCost += 0;
     });
 

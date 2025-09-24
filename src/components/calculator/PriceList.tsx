@@ -20,7 +20,7 @@ export function PriceList({
         {Object.entries(materials).map(([key, material]) => (
           <div key={key} className="flex justify-between items-center gap-4">
             <Label className="text-sm font-medium min-w-0 flex-1">
-              {material.name} (m²):
+              {material.name}:
             </Label>
             <Input
               type="number"

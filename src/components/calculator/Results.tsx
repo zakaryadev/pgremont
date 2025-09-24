@@ -42,6 +42,8 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
     // Mahsulot turini tekshirish
     const isBadge = item.name.toLowerCase().includes('beydjik');
     const isAcrylicLetters = item.name.toLowerCase().includes('akril');
+    const isVolumetricLetters = item.name.toLowerCase().includes('обьемная буква') || item.name.toLowerCase().includes('volumetric');
+    const isLightBox = item.name.toLowerCase().includes('световой короб') || item.name.toLowerCase().includes('light box');
     const isStatuetka = item.name.toLowerCase().includes('statuetka');
     const isBolt = item.name.toLowerCase().includes('bolt');
     
@@ -52,8 +54,13 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
       printArea = 0.07 * 0.04 * item.quantity; // 7x4 cm = 0.07x0.04 m
       materialUsed = printArea;
       printCost = item.quantity * itemMaterialPrice; // Soniga qarab narx
-    } else if (isAcrylicLetters) {
-      // Akril harflar uchun: balandlik (cm) × harf soni × narx
+    } else if (isLightBox) {
+      // Light box uchun: eni (m) × bo'yi (m) × soni × narx per m²
+      printArea = item.width * item.height * item.quantity;
+      materialUsed = printArea;
+      printCost = printArea * itemMaterialPrice; // maydon × narx per m²
+    } else if (isAcrylicLetters || isVolumetricLetters) {
+      // Akril harflar va ob'emli harflar uchun: balandlik (cm) × harf soni × narx
       printArea = 0; // Maydon hisoblanmaydi
       materialUsed = 0; // Material sarfi hisoblanmaydi
       printCost = item.height * item.quantity * itemMaterialPrice; // balandlik (cm) × harf soni × narx
@@ -92,6 +99,8 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
       wastePrice: wastePrice,
       isBadge, // Beydjik ekanligini qaytarish
       isAcrylicLetters, // Akril harflar ekanligini qaytarish
+      isVolumetricLetters, // Ob'emli harflar ekanligini qaytarish
+      isLightBox, // Light box ekanligini qaytarish
       isStatuetka, // Statuetka ekanligini qaytarish
       isBolt // Bolt ekanligini qaytarish
     };
@@ -139,8 +148,44 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
             );
           }
 
-          // Akril harflar uchun alohida ko'rsatish
-          if (details.isAcrylicLetters) {
+          // Light box uchun alohida ko'rsatish
+          if (details.isLightBox) {
+            return (
+              <div key={item.id} className="border rounded-lg p-3 bg-blue-50 border-blue-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-sm text-blue-800">{item.name}</span>
+                  <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                    {item.quantity} dona
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-blue-600">Eni:</span>
+                    <span className="text-blue-800">{item.width} m</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-600">Bo'yi:</span>
+                    <span className="text-blue-800">{item.height} m</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-600">Maydon:</span>
+                    <span className="text-blue-800">{(item.width * item.height).toFixed(2)} m²</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-600">1 m² narx:</span>
+                    <span className="text-blue-800">{formatCurrency(itemMaterialPrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-600 font-medium">Jami narx:</span>
+                    <span className="font-bold text-blue-900">{formatCurrency(details.totalCost)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // Akril harflar va ob'emli harflar uchun alohida ko'rsatish
+          if (details.isAcrylicLetters || details.isVolumetricLetters) {
             return (
               <div key={item.id} className="border rounded-lg p-3 bg-green-50 border-green-200">
                 <div className="flex justify-between items-center mb-2">
