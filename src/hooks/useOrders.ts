@@ -68,7 +68,7 @@ export function useOrders() {
 
       const { data, error: insertError } = await supabase
         .from('orders')
-        .insert([orderData])
+        .insert([orderData] as any)
         .select()
         .single();
 
@@ -76,15 +76,19 @@ export function useOrders() {
         throw insertError;
       }
 
+      if (!data) {
+        throw new Error('No data returned from insert operation');
+      }
+
       const newOrder: Order = {
-        id: data.id,
-        name: data.name,
-        phone: data.phone || undefined,
-        createdAt: new Date(data.created_at),
-        state: data.state,
-        results: data.results,
-        materials: data.materials,
-        services: data.services
+        id: (data as any).id,
+        name: (data as any).name,
+        phone: (data as any).phone || undefined,
+        createdAt: new Date((data as any).created_at),
+        state: (data as any).state,
+        results: (data as any).results,
+        materials: (data as any).materials,
+        services: (data as any).services
       };
 
       setOrders(prev => [newOrder, ...prev]);
@@ -139,7 +143,7 @@ export function useOrders() {
         const { error: deleteError } = await supabase
           .from('orders')
           .delete()
-          .in('id', allOrders.map(order => order.id));
+          .in('id', allOrders.map((order: any) => order.id));
 
         if (deleteError) {
           throw deleteError;
