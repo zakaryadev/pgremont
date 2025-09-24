@@ -144,8 +144,8 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
         {/* Beydjik uchun o'lcham maydonlari ko'rsatilmaydi */}
         {!isBadge && (
           <>
-            {/* Tablichkalar uchun eni va bo'yi */}
-            {isTabletMaterial && (
+            {/* Eni maydoni - boltlar va statuetka uchun ko'rsatilmaydi */}
+            {!isBolt && !isStatuetka && !isAcrylicLetters && (
               <div>
                 <Label htmlFor="item-width" className="text-sm font-medium text-muted-foreground">
                   Ishning eni (m)
