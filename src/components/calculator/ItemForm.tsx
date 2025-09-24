@@ -179,8 +179,8 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
                 />
               </div>
             )}
-            {/* Bo'yi maydoni - statuetka uchun ko'rsatilmaydi */}
-            {!isStatuetka && (
+            {/* Bo'yi maydoni - statuetka va bolt uchun ko'rsatilmaydi */}
+            {!isStatuetka && !isBolt && (
               <div>
                 <Label htmlFor="item-height" className="text-sm font-medium text-muted-foreground">
                   {(isAcrylicLetters || isVolumetricLetters) ? "Harfning bo'yi (cm)" : "Ishning bo'yi (m)"}

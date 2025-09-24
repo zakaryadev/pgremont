@@ -8,7 +8,7 @@ export const tableMaterials: Record<string, Material> = {
     wastePrice: 200000
   },
   plexiglass: { 
-    name: 'Orgsteklo (Plexiglass) tablichka', 
+    name: 'Orgsteklo tablichka', 
     widths: [], // Tablichkalar uchun material eni yo'q
     price: 1900000, // 1,900,000 so'm per m²
     wastePrice: 300000
