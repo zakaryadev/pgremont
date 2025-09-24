@@ -38,6 +38,8 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
             alt="TOGO GROUP Logo" 
             className="h-16 md:h-20 w-auto mb-4"
           />
+          <h1 className="text-3xl font-bold mb-2">TOGO GROUP PRO</h1>
+          <p className="text-muted-foreground">Barcha turdagi mahsulotlar uchun kalkulyator</p>
         </div>
       </div>
       
