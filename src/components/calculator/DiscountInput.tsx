@@ -10,7 +10,9 @@ interface DiscountInputProps {
 export function DiscountInput({ discountPercentage, onDiscountChange }: DiscountInputProps) {
   const handleDiscountChange = (value: string) => {
     const percentage = parseFloat(value) || 0;
-    onDiscountChange(percentage);
+    // Limit maximum discount to 10%
+    const limitedPercentage = Math.min(percentage, 10);
+    onDiscountChange(limitedPercentage);
   };
 
   return (
@@ -25,14 +27,14 @@ export function DiscountInput({ discountPercentage, onDiscountChange }: Discount
           type="number"
           value={discountPercentage || ""}
           onChange={(e) => handleDiscountChange(e.target.value)}
-          placeholder="Masalan: 10"
+          placeholder="Masalan: 5"
           min="0"
-          max="100"
+          max="10"
           step="0.1"
           className="mt-1"
         />
         <p className="text-xs text-muted-foreground">
-          Skidka foizini kiriting (0-100% oralig'ida)
+          Skidka foizini kiriting (0-10% oralig'ida)
         </p>
       </div>
     </Card>

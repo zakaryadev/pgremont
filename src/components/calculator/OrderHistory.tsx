@@ -166,7 +166,8 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
           item.name.toLowerCase().includes('orgsteklo') ||
           item.name.toLowerCase().includes('akril') ||
           item.name.toLowerCase().includes('statuetka') ||
-          item.name.toLowerCase().includes('bolt')
+          item.name.toLowerCase().includes('bolt') ||
+          item.name.toLowerCase().includes('stend')
         ) ||
         // Check if the selected material is a tablet material
         (order.state.selectedMaterial && (
@@ -174,7 +175,11 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
           order.state.selectedMaterial === 'plexiglass' ||
           order.state.selectedMaterial === 'acrylic' ||
           order.state.selectedMaterial === 'statue' ||
-          order.state.selectedMaterial === 'bolt'
+          order.state.selectedMaterial === 'bolt' ||
+          order.state.selectedMaterial === 'stand_orgsteklo_3mm' ||
+          order.state.selectedMaterial === 'stand_orgsteklo_5mm' ||
+          order.state.selectedMaterial === 'stand_alyukabond' ||
+          order.state.selectedMaterial === 'stand_fomiks'
         ));
         const hasPolygraphy = order.state.items.some(item => 
           item.name.toLowerCase().includes('banner') ||
@@ -196,7 +201,8 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
           item.name.toLowerCase().includes('volumetric') ||
           item.name.toLowerCase().includes('akril') && item.name.toLowerCase().includes('harf') ||
           item.name.toLowerCase().includes('световой короб') ||
-          item.name.toLowerCase().includes('light box')
+          item.name.toLowerCase().includes('light box') ||
+          item.name.toLowerCase().includes('тканевые световые короба')
         ) ||
         // Check if the selected material is a volumetric letter material or light box
         (order.state.selectedMaterial && (
@@ -206,7 +212,8 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
           order.state.selectedMaterial === 'volumetric_contour' ||
           order.state.selectedMaterial === 'volumetric_acrylic_border' ||
           order.state.selectedMaterial === 'volumetric_dotted' ||
-          order.state.selectedMaterial === 'light_box'
+          order.state.selectedMaterial === 'light_box' ||
+          order.state.selectedMaterial === 'fabric_light_box'
         ));
 
         switch (productTypeFilter) {
@@ -555,11 +562,16 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                             <SelectItem value="volumetric_contour">Обьемная буква (Контройорный)</SelectItem>
                             <SelectItem value="volumetric_acrylic_border">Обьемная буква (Борт акрил)</SelectItem>
                             <SelectItem value="volumetric_dotted">Обьемная буква (Точечные)</SelectItem>
-                            <SelectItem value="light_box">Световой короб</SelectItem>
+                            <SelectItem value="light_box">Световой короб (акрил)</SelectItem>
+                            <SelectItem value="fabric_light_box">Тканевые световые короба</SelectItem>
                             <SelectItem value="badge">Beydjik (7x4 cm)</SelectItem>
                             <SelectItem value="premium_badge">Premium beydjik (7x4 cm)</SelectItem>
                             <SelectItem value="statue">Statuetka (Acrylic)</SelectItem>
                             <SelectItem value="bolt">Distansion bolt</SelectItem>
+                            <SelectItem value="stand_orgsteklo_3mm">Stend Orgsteklo (3mm)</SelectItem>
+                            <SelectItem value="stand_orgsteklo_5mm">Stend Orgsteklo (5mm)</SelectItem>
+                            <SelectItem value="stand_alyukabond">Stend Alyukabond</SelectItem>
+                            <SelectItem value="stand_fomiks">Stend Fomiks</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

@@ -2,7 +2,7 @@ import { Material, Service } from '../types/calculator';
 
 export const letterMaterials: Record<string, Material> = {
   volumetric_no_led: { 
-    name: 'Обьемная буква (Без диод)', 
+    name: 'Обьемная буква (без диод или без установка)', 
     widths: [], // Bukvalar uchun faqat bo'yi (balandlik) kerak
     price: 7000, // 7,000 so'm per cm
     wastePrice: 0
@@ -38,9 +38,15 @@ export const letterMaterials: Record<string, Material> = {
     wastePrice: 0
   },
   light_box: { 
-    name: 'Световой короб', 
+    name: 'Световой короб (акрил)', 
     widths: [], // Light box uchun eni va bo'yi kerak
     price: 1500000, // 1,500,000 so'm per m²
+    wastePrice: 0
+  },
+  fabric_light_box: { 
+    name: 'Тканевые световые короба', 
+    widths: [], // Light box uchun eni va bo'yi kerak
+    price: 1700000, // 1,700,000 so'm per m²
     wastePrice: 0
   }
 };
