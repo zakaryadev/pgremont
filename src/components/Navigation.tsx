@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { AuthModal } from './auth/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { supabase } from '../integrations/supabase/client';
 
 interface NavigationProps {
   activeCalculator: string;
@@ -12,6 +14,7 @@ interface NavigationProps {
 
 export function Navigation({ activeCalculator, onCalculatorChange }: NavigationProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { user, signOut } = useAuth();
   const calculators = [
     {
@@ -35,8 +38,45 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
   ];
 
 
+  useEffect(() => {
+    checkAdminStatus();
+  }, [user]);
+
+  const checkAdminStatus = async () => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        setIsAdmin(user.email === 'admin@togogroup.com');
+      } else {
+        setIsAdmin((profile as any)?.role === 'admin');
+      }
+    } catch (error) {
+      setIsAdmin(user.email === 'admin@togogroup.com');
+    }
+  };
+
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      console.log('Signing out...');
+      await signOut();
+      console.log('Signed out successfully');
+      // Force page reload to ensure clean state
+      window.location.reload();
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Even if signOut fails, try to clear local state and reload
+      window.location.reload();
+    }
   };
 
   return (
@@ -55,8 +95,20 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="h-4 w-4" />
-                <span>{user.email === 'admin@togogroup.com' ? 'Admin' : user.email}</span>
+                <span>{isAdmin ? 'Admin' : user.email}</span>
               </div>
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Admin
+                  </Button>
+                </Link>
+              )}
               <Button
                 variant="outline"
                 size="sm"

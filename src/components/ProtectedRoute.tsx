@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { AuthModal } from './auth/AuthModal';
-import { useState } from 'react';
+import { LoginForm } from './auth/LoginForm';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,7 +8,6 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  const [showAuthModal, setShowAuthModal] = useState(false);
 
   if (loading) {
     return (
@@ -37,10 +35,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
               Tizimga kirish uchun login va parolingizni kiriting
             </p>
           </div>
-          <AuthModal 
-            isOpen={true} 
-            onClose={() => {}} 
-          />
+          <LoginForm />
         </div>
       </div>
     );

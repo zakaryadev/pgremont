@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import PolygraphyPage from "./pages/PolygraphyPage";
 import TabletsPage from "./pages/TabletsPage";
 import LettersPage from "./pages/LettersPage";
+import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,7 +20,12 @@ const App = () => (
       <AuthProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true
+          }}
+        >
           <Routes>
             <Route path="/" element={
               <ProtectedRoute>
@@ -39,6 +45,11 @@ const App = () => (
             <Route path="/letters" element={
               <ProtectedRoute>
                 <LettersPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminPage />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
