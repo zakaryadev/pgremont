@@ -164,9 +164,9 @@ export function TabletCalculator() {
       const isBadge = item.name.toLowerCase().includes('beydjik');
       const isStatuetka = item.name.toLowerCase().includes('statuetka');
       const isBolt = item.name.toLowerCase().includes('bolt');
-      
+
       let itemPrintArea, itemMaterialUsed, itemMaterialCost;
-      
+
       if (isBadge) {
         // Beydjik uchun: narx soniga qarab hisoblanadi
         itemPrintArea = 0.07 * 0.04 * item.quantity; // 7x4 cm = 0.07x0.04 m
@@ -188,7 +188,7 @@ export function TabletCalculator() {
         itemMaterialUsed = itemPrintArea;
         itemMaterialCost = itemPrintArea * item.materialPrice;
       }
-      
+
       totalPrintArea += itemPrintArea;
       totalMaterialUsed += itemMaterialUsed;
       totalMaterialCost += itemMaterialCost;
@@ -232,7 +232,7 @@ export function TabletCalculator() {
 
     const printCost = 0;
     const totalCost = totalMaterialCost + printCost + totalServiceCost; // Chiqindi narxi qo'shilmaydi
-    
+
     // Calculate discount
     const discountAmount = (totalCost * state.discountPercentage) / 100;
     const finalCost = totalCost - discountAmount;
@@ -257,11 +257,13 @@ export function TabletCalculator() {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-4">
-            <img 
-              src="/logo.png" 
-              alt="TOGO GROUP Logo" 
-              className="h-16 md:h-20 w-auto mb-4"
-            />
+            <a href="/">
+              <img
+                src="/logo.png"
+                alt="TOGO GROUP Logo"
+                className="h-16 md:h-20 w-auto mb-4"
+              />
+            </a>
             <h1 className="text-3xl font-bold mb-2">Tablichkalar kalkulyatori</h1>
             <p className="text-lg text-muted-foreground">
               Romark, orgsteklo, akril tablichkalar, beydjik, statuetka va boltlar uchun to'liq hisob-kitob
@@ -293,7 +295,7 @@ export function TabletCalculator() {
             />
           </div>
           <div className="xl:col-span-1 space-y-6">
-          <ItemForm
+            <ItemForm
               selectedWidth={0} // Tablichkalar uchun material eni yo'q
               materialPrice={currentMaterial.price}
               materialName={currentMaterial.name}

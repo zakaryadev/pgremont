@@ -125,7 +125,9 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
     // Tablichkalar uchun material eni tekshiruvi yo'q - hohlagancha o'lcham
 
     // Auto-generate product name based on material name
-    const productName = isTablet || isAcrylicLetters ? materialName : materialName;
+    // For banners, use material name + material width
+    const isBanner = materialName.toLowerCase().includes('баннер') || materialName.toLowerCase().includes('banner');
+    const productName = isBanner ? `${materialName} ${selectedWidth}м` : (isTablet || isAcrylicLetters ? materialName : materialName);
     
     onAddItem({ 
       id: Date.now().toString(),

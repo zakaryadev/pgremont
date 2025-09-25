@@ -15,6 +15,7 @@ import { materials as initialMaterials, services as initialServices } from "../.
 import { CalculatorState, Item, CalculationResults, Material, Service, ServiceVisibility, Order } from "../../types/calculator";
 import { useOrders } from "../../hooks/useOrders";
 import { useToast } from "../../hooks/use-toast";
+import { Link } from "lucide-react";
 
 export function PolygraphyCalculator() {
   const [materials, setMaterials] = useState(initialMaterials);
@@ -225,7 +226,7 @@ export function PolygraphyCalculator() {
 
     const printCost = 0;
     const totalCost = totalMaterialCost + printCost + totalWasteCost + totalServiceCost;
-    
+
     // Calculate discount
     const discountAmount = (totalCost * state.discountPercentage) / 100;
     const finalCost = totalCost - discountAmount;
@@ -250,11 +251,13 @@ export function PolygraphyCalculator() {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-4">
-            <img 
-              src="/logo.png" 
-              alt="TOGO GROUP Logo" 
-              className="h-16 md:h-20 w-auto mb-4"
-            />
+            <a href="/">
+              <img
+                src="/logo.png"
+                alt="TOGO GROUP Logo"
+                className="h-16 md:h-20 w-auto mb-4"
+              />
+            </a>
             <p className="text-lg text-muted-foreground">
               Barcha turdagi bosma ishlar uchun to'liq hisob-kitob
             </p>
@@ -277,18 +280,6 @@ export function PolygraphyCalculator() {
               onSelect={selectWidth}
             />
 
-            
-
-            {/* <ServiceVisibilityToggle
-              services={services}
-              visibility={serviceVisibility}
-              onToggleVisibility={toggleServiceVisibility}
-            /> */}
-
-            {/* <ItemVisibilityToggle
-              items={state.items}
-              onToggleVisibility={toggleItemVisibility}
-            /> */}
 
             <DiscountInput
               discountPercentage={state.discountPercentage}
@@ -302,7 +293,7 @@ export function PolygraphyCalculator() {
             />
           </div>
           <div className="xl:col-span-1 space-y-6">
-          <ItemForm
+            <ItemForm
               selectedWidth={state.selectedWidth}
               materialPrice={currentMaterial.price}
               materialName={currentMaterial.name}

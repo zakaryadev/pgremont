@@ -28,7 +28,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'custom'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'custom'>('today');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [materialFilter, setMaterialFilter] = useState<string>('all');

@@ -220,11 +220,13 @@ export function LettersCalculator() {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-4">
-            <img
-              src="/logo.png"
-              alt="TOGO GROUP Logo"
-              className="h-16 md:h-20 w-auto mb-4"
-            />
+          <a href="/">
+              <img
+                src="/logo.png"
+                alt="TOGO GROUP Logo"
+                className="h-16 md:h-20 w-auto mb-4"
+              />
+            </a>
             <h1 className="text-3xl font-bold mb-2">Bukvalar kalkulyatori</h1>
             <p className="text-lg text-muted-foreground">
               O'lchamli harflar, yorug'lik korobi, akril va metal harflar uchun to'liq hisob-kitob
