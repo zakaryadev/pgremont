@@ -16,6 +16,7 @@ import { DiscountInput } from './DiscountInput';
 import { useOrders } from '../../hooks/useOrders';
 import { CalculatorState, Item, CalculationResults, Order } from '../../types/calculator';
 import { letterMaterials, letterServices } from '../../data/letterData';
+import { Link } from 'react-router-dom';
 
 export function LettersCalculator() {
   const [state, setState] = useState<CalculatorState>({
@@ -220,13 +221,13 @@ export function LettersCalculator() {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-4">
-          <a href="/">
+          <Link to="/">
               <img
                 src="/logo.png"
                 alt="TOGO GROUP Logo"
                 className="h-16 md:h-20 w-auto mb-4"
               />
-            </a>
+            </Link>
             <h1 className="text-3xl font-bold mb-2">Bukvalar kalkulyatori</h1>
             <p className="text-lg text-muted-foreground">
               O'lchamli harflar, yorug'lik korobi, akril va metal harflar uchun to'liq hisob-kitob

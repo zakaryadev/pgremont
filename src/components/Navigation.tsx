@@ -1,5 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { AuthModal } from './auth/AuthModal';
+import { useAuth } from '../contexts/AuthContext';
+import { LogOut, User } from 'lucide-react';
 
 interface NavigationProps {
   activeCalculator: string;
@@ -7,6 +11,8 @@ interface NavigationProps {
 }
 
 export function Navigation({ activeCalculator, onCalculatorChange }: NavigationProps) {
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { user, signOut } = useAuth();
   const calculators = [
     {
       id: 'polygraphy',
@@ -29,6 +35,10 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
   ];
 
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <div className="mb-8">
       <div className="text-center mb-6">
@@ -38,14 +48,41 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
             alt="TOGO GROUP Logo" 
             className="h-16 md:h-20 w-auto mb-4"
           />
-          <h1 className="text-3xl font-bold mb-2">TOGO GROUP PRO</h1>
-          <p className="text-muted-foreground">Barcha turdagi mahsulotlar uchun kalkulyator</p>
+        </div>
+        {/* Auth Section */}
+        <div className="flex justify-center mb-4">
+          {user ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="h-4 w-4" />
+                <span>{user.email === 'admin@togogroup.com' ? 'Admin' : user.email}</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSignOut}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Chiqish
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => setShowAuthModal(true)}
+              className="flex items-center gap-2"
+            >
+              <User className="h-4 w-4" />
+              Tizimga kirish
+            </Button>
+          )}
         </div>
       </div>
       
       {/* Categories */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-center">Mahsulot turlarini tanlang:</h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">Yo'nalish turlarini tanlang:</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {calculators.map((calculator) => (
             <Card 
@@ -70,6 +107,11 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
           ))}
         </div>
       </div>
+      
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </div>
   );
 }

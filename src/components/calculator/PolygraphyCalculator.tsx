@@ -15,7 +15,7 @@ import { materials as initialMaterials, services as initialServices } from "../.
 import { CalculatorState, Item, CalculationResults, Material, Service, ServiceVisibility, Order } from "../../types/calculator";
 import { useOrders } from "../../hooks/useOrders";
 import { useToast } from "../../hooks/use-toast";
-import { Link } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function PolygraphyCalculator() {
   const [materials, setMaterials] = useState(initialMaterials);
@@ -251,13 +251,13 @@ export function PolygraphyCalculator() {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-4">
-            <a href="/">
+            <Link to="/">
               <img
                 src="/logo.png"
                 alt="TOGO GROUP Logo"
                 className="h-16 md:h-20 w-auto mb-4"
               />
-            </a>
+            </Link>
             <p className="text-lg text-muted-foreground">
               Barcha turdagi bosma ishlar uchun to'liq hisob-kitob
             </p>

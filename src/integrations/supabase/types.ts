@@ -43,6 +43,32 @@ export type Database = {
           services?: Json
         }
       }
+      profiles: {
+        Row: {
+          id: string
+          username: string | null
+          full_name: string | null
+          role: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          username?: string | null
+          full_name?: string | null
+          role?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          username?: string | null
+          full_name?: string | null
+          role?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
