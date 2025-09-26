@@ -32,10 +32,22 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
   const isStatuetka = materialName.toLowerCase().includes('statuetka');
   const isBolt = materialName.toLowerCase().includes('bolt');
   
-  // CM dan M ga aylantirish kerak bo'lgan tablichka materiallari
+  // CM dan M ga aylantirish kerak bo'lgan materiallar
   const isCmToMTablet = materialName.toLowerCase().includes('romark tablichka') || 
                        materialName.toLowerCase().includes('akril (alyukabond) tablichka') || 
                        materialName.toLowerCase().includes('akril tablichka');
+  
+  // Banner uchun CM dan M ga aylantirish
+  const isBanner = materialName.toLowerCase().includes('баннер') || materialName.toLowerCase().includes('banner');
+  
+  // Stend orgsteklo uchun CM dan M ga aylantirish
+  const isStendOrgsteklo = materialName.toLowerCase().includes('stend orgsteklo');
+  
+  // Ткановые свет короба uchun CM dan M ga aylantirish
+  const isFabricLightBox = materialName.toLowerCase().includes('тканевые световые короба');
+  
+  // Световой короб (акрил) uchun CM dan M ga aylantirish
+  const isAcrylicLightBox = materialName.toLowerCase().includes('световой короб (акрил)');
 
   // Matn kiritilganda harf sonini avtomatik hisoblash
   const handleTextChange = (text: string) => {
@@ -61,12 +73,19 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
       itemQuantity = parseInt(letterCount); // harf soni
     } else if (isLightBox) {
       // Light box uchun: eni (m) × bo'yi (m) × soni
-      itemWidth = parseFloat(width);
-      itemHeight = parseFloat(height);
+      if (isAcrylicLightBox) {
+        // Световой короб (акрил) uchun: CM dan M ga aylantirish
+        itemWidth = parseFloat(width) / 100;
+        itemHeight = parseFloat(height) / 100;
+      } else {
+        // Boshqa light box uchun: eni va bo'yi (m)
+        itemWidth = parseFloat(width);
+        itemHeight = parseFloat(height);
+      }
       itemQuantity = parseInt(quantity);
     } else if (isTabletMaterial) {
       // Tablichkalar uchun: eni va bo'yi
-      if (isCmToMTablet) {
+      if (isCmToMTablet || isStendOrgsteklo) {
         // CM dan M ga aylantirish: CM ÷ 100 = M
         itemWidth = parseFloat(width) / 100;
         itemHeight = parseFloat(height) / 100;
@@ -75,6 +94,16 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
         itemWidth = parseFloat(width);
         itemHeight = parseFloat(height);
       }
+      itemQuantity = parseInt(quantity);
+    } else if (isBanner) {
+      // Banner uchun: CM dan M ga aylantirish
+      itemWidth = parseFloat(width) / 100;
+      itemHeight = parseFloat(height) / 100;
+      itemQuantity = parseInt(quantity);
+    } else if (isFabricLightBox) {
+      // Ткановые свет короба uchun: CM dan M ga aylantirish
+      itemWidth = parseFloat(width) / 100;
+      itemHeight = parseFloat(height) / 100;
       itemQuantity = parseInt(quantity);
     } else if (isStatuetka) {
       // Statuetka uchun: faqat soni × narx (donasiga 200,000 so'm)
@@ -126,7 +155,6 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
 
     // Auto-generate product name based on material name
     // For banners, use material name + material width
-    const isBanner = materialName.toLowerCase().includes('баннер') || materialName.toLowerCase().includes('banner');
     const productName = isBanner ? `${materialName} ${selectedWidth}м` : (isTablet || isAcrylicLetters ? materialName : materialName);
     
     onAddItem({ 
@@ -179,14 +207,14 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
             {!isBolt && !isStatuetka && !isAcrylicLetters && !isVolumetricLetters && (
               <div>
                 <Label htmlFor="item-width" className="text-sm font-medium text-muted-foreground">
-                  Ishning eni {isCmToMTablet ? "(cm)" : "(m)"}
+                  Ishning eni {(isCmToMTablet || isStendOrgsteklo || isBanner || isFabricLightBox || isAcrylicLightBox) ? "(cm)" : "(m)"}
                 </Label>
                 <Input
                   id="item-width"
                   type="number"
                   value={width}
                   onChange={(e) => setWidth(e.target.value)}
-                  placeholder={isCmToMTablet ? "Masalan: 150" : "Masalan: 1.5"}
+                  placeholder={(isCmToMTablet || isStendOrgsteklo || isBanner || isFabricLightBox || isAcrylicLightBox) ? "Masalan: 150" : "Masalan: 1.5"}
                   step="0.01"
                   className="mt-1"
                   required
@@ -197,14 +225,14 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
             {!isStatuetka && !isBolt && (
               <div>
                 <Label htmlFor="item-height" className="text-sm font-medium text-muted-foreground">
-                  {(isAcrylicLetters || isVolumetricLetters) ? "Harfning bo'yi (cm)" : `Ishning bo'yi ${isCmToMTablet ? "(cm)" : "(m)"}`}
+                  {(isAcrylicLetters || isVolumetricLetters) ? "Harfning bo'yi (cm)" : `Ishning bo'yi ${(isCmToMTablet || isStendOrgsteklo || isBanner || isFabricLightBox || isAcrylicLightBox) ? "(cm)" : "(m)"}`}
                 </Label>
                 <Input
                   id="item-height"
                   type="number"
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  placeholder={(isAcrylicLetters || isVolumetricLetters) ? "Masalan: 50" : (isCmToMTablet ? "Masalan: 200" : "Masalan: 2.0")}
+                  placeholder={(isAcrylicLetters || isVolumetricLetters) ? "Masalan: 50" : ((isCmToMTablet || isStendOrgsteklo || isBanner || isFabricLightBox || isAcrylicLightBox) ? "Masalan: 200" : "Masalan: 2.0")}
                   step={(isAcrylicLetters || isVolumetricLetters) ? "1" : "0.01"}
                   className="mt-1"
                   required
