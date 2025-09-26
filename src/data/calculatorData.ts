@@ -57,6 +57,12 @@ export const services: Record<string, Service> = {
     type: 'per_sqm',
     materials: ['banner']
   },
+  banner_bez_ustanovki_reika: {
+    name: 'Без установки с рейкой',
+    price: 30000,
+    type: 'per_sqm',
+    materials: ['banner']
+  },
   holst_ustanovka: {
     name: 'Установка холста',
     price: 25000,
