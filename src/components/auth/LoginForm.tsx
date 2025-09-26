@@ -3,12 +3,25 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Alert, AlertDescription } from '../ui/alert';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/use-toast';
 
+// Predefined users for selection
+const USERS = [
+  {
+    name: 'Togo Group PRO',
+    password: 'togo0800',
+    role: 'admin'
+  },
+  {
+    name: 'Manager',
+    password: 'togo0000',
+    role: 'manager'
+  }
+];
+
 export function LoginForm() {
-  const [username, setUsername] = useState('');
+  const [selectedUser, setSelectedUser] = useState<string>('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
@@ -16,41 +29,41 @@ export function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!selectedUser) {
+      toast({
+        title: "Xatolik",
+        description: "Foydalanuvchi turini tanlang",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!password) {
+      toast({
+        title: "Xatolik",
+        description: "Parolni kiriting",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
-    // Check for default admin credentials
-    if (username === 'TogoGroupPRO' && password === 'togo0800') {
-      // For default admin, use admin@togogroup.com email
-      const { error } = await signIn('admin@togogroup.com', 'togo0800');
-      
-      if (error) {
-        toast({
-          title: "Xatolik",
-          description: "Login yoki parol noto'g'ri",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Muvaffaqiyat",
-          description: "Admin sifatida tizimga kirdingiz",
-        });
-      }
+    // Sign in with the selected user and entered password
+    const { error } = await signIn(selectedUser, password);
+    
+    if (error) {
+      toast({
+        title: "Xatolik",
+        description: "Parol noto'g'ri",
+        variant: "destructive",
+      });
     } else {
-      // For other users, try with username as email
-      const { error } = await signIn(username, password);
-      
-      if (error) {
-        toast({
-          title: "Xatolik",
-          description: "Login yoki parol noto'g'ri",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Muvaffaqiyat",
-          description: "Tizimga muvaffaqiyatli kirdingiz",
-        });
-      }
+      toast({
+        title: "Muvaffaqiyat",
+        description: `${selectedUser} sifatida tizimga kirdingiz`,
+      });
     }
     
     setLoading(false);
@@ -59,24 +72,34 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Kirish</CardTitle>
-        <CardDescription>
-          Tizimga kirish uchun login va parolingizni kiriting
+        <CardTitle className="text-center">Tizimga kirish</CardTitle>
+        <CardDescription className="text-center">
+          Foydalanuvchi turini tanlang va parolni kiriting
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="username">Login</Label>
-            <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Login kiriting"
-              required
-            />
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Foydalanuvchi turi</Label>
+            {USERS.map((user) => (
+              <Button
+                key={user.name}
+                type="button"
+                variant={selectedUser === user.name ? "default" : "outline"}
+                className="w-full h-16 text-lg font-medium"
+                onClick={() => setSelectedUser(user.name)}
+                disabled={loading}
+              >
+                <div className="flex flex-col items-center">
+                  <span>{user.name}</span>
+                  <span className="text-sm opacity-70">
+                    {user.role === 'admin' ? 'Administrator' : 'Manager'}
+                  </span>
+                </div>
+              </Button>
+            ))}
           </div>
+          
           <div className="space-y-2">
             <Label htmlFor="password">Parol</Label>
             <Input
@@ -86,15 +109,18 @@ export function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Parolingizni kiriting"
               required
+              disabled={loading}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          
+          <Button type="submit" className="w-full" disabled={loading || !selectedUser}>
             {loading ? "Kiring..." : "Kirish"}
           </Button>
         </form>
-        <div className="mt-4 text-center">
+        
+        <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Faqat admin tomonidan berilgan login va parol bilan kirish mumkin
+            Faqat tizimda ro'yxatdan o'tgan foydalanuvchilar kirish mumkin
           </p>
         </div>
       </CardContent>
