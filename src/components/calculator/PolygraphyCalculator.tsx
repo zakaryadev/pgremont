@@ -128,7 +128,7 @@ export function PolygraphyCalculator() {
 
   const handleSaveOrder = async (orderData: { name: string; phone?: string }) => {
     try {
-      await saveOrder(orderData.name, state, results, materials, services, orderData.phone);
+      await saveOrder(orderData.name, state, results, materials, services, orderData.phone, 'polygraphy');
       // Trigger refresh in OrderHistory component
       setRefreshTrigger(prev => prev + 1);
       toast({
@@ -178,8 +178,9 @@ export function PolygraphyCalculator() {
       const itemMaterialUsed = item.materialWidth * item.height * item.quantity;
       totalMaterialUsed += itemMaterialUsed;
 
-      // Calculate material cost for this specific item
-      const itemMaterialCost = itemPrintArea * item.materialPrice;
+      // Calculate material cost for this specific item using current material price
+      const currentMaterialPrice = materials[state.selectedMaterial]?.price || item.materialPrice;
+      const itemMaterialCost = itemPrintArea * currentMaterialPrice;
       totalMaterialCost += itemMaterialCost;
 
       // Calculate waste cost for this specific item
@@ -244,7 +245,7 @@ export function PolygraphyCalculator() {
       discountAmount,
       finalCost,
     };
-  }, [state, currentMaterial, services]);
+  }, [state, materials, services]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -322,6 +323,7 @@ export function PolygraphyCalculator() {
               <PriceList
                 materials={materials}
                 onUpdateMaterialPrice={updateMaterialPrice}
+                onUpdateMaterialWastePrice={updateMaterialWastePrice}
               />
 
               <Results
@@ -337,6 +339,7 @@ export function PolygraphyCalculator() {
               isOpen={showOrderHistory}
               onClose={() => setShowOrderHistory(false)}
               refreshTrigger={refreshTrigger}
+              calculatorType="polygraphy"
             />
           </div>
         </div>

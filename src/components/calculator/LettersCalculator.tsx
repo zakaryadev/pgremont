@@ -112,7 +112,7 @@ export function LettersCalculator() {
 
   const handleSaveOrder = async (orderData: { name: string; phone?: string }) => {
     try {
-      await saveOrder(orderData.name, state, results, materials, services, orderData.phone);
+      await saveOrder(orderData.name, state, results, materials, services, orderData.phone, 'letters');
       setRefreshTrigger(prev => prev + 1);
       
       // Reset calculator
@@ -162,7 +162,8 @@ export function LettersCalculator() {
         totalMaterialUsed += itemMaterialUsed;
         
         // Light box uchun: eni(m) × bo'yi(m) × soni × narx per m²
-        const itemMaterialCost = itemPrintArea * item.materialPrice;
+        const currentMaterialPrice = materials[state.selectedMaterial]?.price || item.materialPrice;
+        const itemMaterialCost = itemPrintArea * currentMaterialPrice;
         totalMaterialCost += itemMaterialCost;
         
         // Light box uchun chiqindi yo'q
@@ -178,7 +179,8 @@ export function LettersCalculator() {
         totalMaterialUsed += itemMaterialUsed;
 
         // Bukvalar uchun: balandlik(cm) × soni × narx
-        const itemMaterialCost = item.height * item.quantity * item.materialPrice;
+        const currentMaterialPrice = materials[state.selectedMaterial]?.price || item.materialPrice;
+        const itemMaterialCost = item.height * item.quantity * currentMaterialPrice;
         totalMaterialCost += itemMaterialCost;
 
         // Bukvalar uchun chiqindi yo'q
@@ -214,7 +216,7 @@ export function LettersCalculator() {
       discountAmount,
       finalCost,
     };
-  }, [state, currentMaterial, services]);
+  }, [state, materials, services]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -281,6 +283,7 @@ export function LettersCalculator() {
               <PriceList
                 materials={materials}
                 onUpdateMaterialPrice={updateMaterialPrice}
+                onUpdateMaterialWastePrice={updateMaterialWastePrice}
               />
               <Results
                 results={results}
@@ -295,6 +298,7 @@ export function LettersCalculator() {
               isOpen={showOrderHistory}
               onClose={() => setShowOrderHistory(false)}
               refreshTrigger={refreshTrigger}
+              calculatorType="letters"
             />
           </div>
         </div>

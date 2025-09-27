@@ -29,7 +29,8 @@ export function useOrders() {
         state: order.state,
         results: order.results,
         materials: order.materials,
-        services: order.services
+        services: order.services,
+        calculatorType: order.calculator_type || 'polygraphy'
       }));
 
       setOrders(formattedOrders);
@@ -52,7 +53,8 @@ export function useOrders() {
     results: CalculationResults,
     materials: Record<string, Material>,
     services: Record<string, Service>,
-    phone?: string
+    phone?: string,
+    calculatorType: 'polygraphy' | 'tablets' | 'letters' = 'polygraphy'
   ) => {
     try {
       setError(null);
@@ -63,7 +65,8 @@ export function useOrders() {
         state,
         results,
         materials,
-        services
+        services,
+        calculator_type: calculatorType
       };
 
       const { data, error: insertError } = await supabase
@@ -88,7 +91,8 @@ export function useOrders() {
         state: (data as any).state,
         results: (data as any).results,
         materials: (data as any).materials,
-        services: (data as any).services
+        services: (data as any).services,
+        calculatorType: (data as any).calculator_type || 'polygraphy'
       };
 
       setOrders(prev => [newOrder, ...prev]);

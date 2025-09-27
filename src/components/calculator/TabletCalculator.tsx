@@ -119,7 +119,7 @@ export function TabletCalculator() {
 
   const handleSaveOrder = async (orderData: { name: string; phone?: string }) => {
     try {
-      await saveOrder(orderData.name, state, results, materials, services, orderData.phone);
+      await saveOrder(orderData.name, state, results, materials, services, orderData.phone, 'tablets');
       // Trigger refresh in OrderHistory component
       setRefreshTrigger(prev => prev + 1);
       toast({
@@ -168,26 +168,29 @@ export function TabletCalculator() {
 
       let itemPrintArea, itemMaterialUsed, itemMaterialCost;
 
+      // Get current material price for this item
+      const currentMaterialPrice = materials[state.selectedMaterial]?.price || item.materialPrice;
+      
       if (isBadge) {
         // Beydjik uchun: narx soniga qarab hisoblanadi
         itemPrintArea = 0.07 * 0.04 * item.quantity; // 7x4 cm = 0.07x0.04 m
         itemMaterialUsed = itemPrintArea;
-        itemMaterialCost = item.quantity * item.materialPrice; // Soniga qarab narx
+        itemMaterialCost = item.quantity * currentMaterialPrice; // Soniga qarab narx
       } else if (isStatuetka) {
         // Statuetka uchun: faqat soni × narx (donasiga 200,000 so'm)
         itemPrintArea = 0; // Maydon hisoblanmaydi
         itemMaterialUsed = 0; // Material sarfi hisoblanmaydi
-        itemMaterialCost = item.quantity * item.materialPrice; // soni × narx
+        itemMaterialCost = item.quantity * currentMaterialPrice; // soni × narx
       } else if (isBolt) {
         // Bolt uchun: soni × narx
         itemPrintArea = 0; // Maydon hisoblanmaydi
         itemMaterialUsed = 0; // Material sarfi hisoblanmaydi
-        itemMaterialCost = item.quantity * item.materialPrice; // soni × narx
+        itemMaterialCost = item.quantity * currentMaterialPrice; // soni × narx
       } else {
         // Boshqa tablichkalar uchun: maydon bo'yicha hisoblash
         itemPrintArea = item.width * item.height * item.quantity;
         itemMaterialUsed = itemPrintArea;
-        itemMaterialCost = itemPrintArea * item.materialPrice;
+        itemMaterialCost = itemPrintArea * currentMaterialPrice;
       }
 
       totalPrintArea += itemPrintArea;
@@ -251,7 +254,7 @@ export function TabletCalculator() {
       discountAmount,
       finalCost,
     };
-  }, [state, currentMaterial, services]);
+  }, [state, materials, services]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -326,6 +329,7 @@ export function TabletCalculator() {
               <PriceList
                 materials={materials}
                 onUpdateMaterialPrice={updateMaterialPrice}
+                onUpdateMaterialWastePrice={updateMaterialWastePrice}
               />
 
               <Results
@@ -342,6 +346,7 @@ export function TabletCalculator() {
               isOpen={showOrderHistory}
               onClose={() => setShowOrderHistory(false)}
               refreshTrigger={refreshTrigger}
+              calculatorType="tablets"
             />
           </div>
         </div>

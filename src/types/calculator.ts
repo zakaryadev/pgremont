@@ -56,6 +56,7 @@ export interface Order {
   results: CalculationResults;
   materials: Record<string, Material>;
   services: Record<string, Service>;
+  calculatorType: 'polygraphy' | 'tablets' | 'letters';
 }
 
 export interface ServiceVisibility {

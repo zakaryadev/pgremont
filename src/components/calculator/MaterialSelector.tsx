@@ -11,7 +11,7 @@ export function MaterialSelector({ materials, selectedMaterial, onSelect }: Mate
   return (
     <Card className="p-6 bg-gradient-to-br from-card to-muted/20">
       <h2 className="text-xl font-semibold mb-4 text-foreground">1. Material tanlang</h2>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 overflow-hidden">
         {Object.entries(materials).map(([key, material]) => (
           <Button
             key={key}

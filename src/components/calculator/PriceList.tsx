@@ -6,11 +6,13 @@ import { Separator } from "../ui/separator";
 interface PriceListProps {
   materials: Record<string, { name: string; price: number; wastePrice: number }>;
   onUpdateMaterialPrice: (materialKey: string, value: number) => void;
+  onUpdateMaterialWastePrice?: (materialKey: string, value: number) => void;
 }
 
 export function PriceList({ 
   materials, 
-  onUpdateMaterialPrice
+  onUpdateMaterialPrice,
+  onUpdateMaterialWastePrice
 }: PriceListProps) {
   return (
     <Card className="p-6 bg-gradient-to-br from-card to-muted/20">
@@ -18,17 +20,19 @@ export function PriceList({
       
       <div className="space-y-4">
         {Object.entries(materials).map(([key, material]) => (
-          <div key={key} className="flex justify-between items-center gap-4">
-            <Label className="text-sm font-medium min-w-0 flex-1">
-              {material.name}:
-            </Label>
-            <Input
-              type="number"
-              value={material.price}
-              onChange={(e) => onUpdateMaterialPrice(key, parseFloat(e.target.value))}
-              className="w-24 text-right"
-              placeholder="Narx"
-            />
+          <div key={key} className="space-y-2">
+            <div className="flex justify-between items-center gap-4">
+              <Label className="text-sm font-medium min-w-0 flex-1">
+                {material.name}:
+              </Label>
+              <Input
+                type="number"
+                value={material.price}
+                onChange={(e) => onUpdateMaterialPrice(key, parseFloat(e.target.value))}
+                className="w-24 text-right"
+                placeholder="Narx"
+              />
+            </div>
           </div>
         ))}
         

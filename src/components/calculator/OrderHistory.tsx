@@ -21,9 +21,10 @@ interface OrderHistoryProps {
   isOpen?: boolean;
   onClose?: () => void;
   refreshTrigger?: number; // Add a trigger to force refresh
+  calculatorType?: 'polygraphy' | 'tablets' | 'letters'; // Filter orders by calculator type
 }
 
-export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, refreshTrigger }: OrderHistoryProps) {
+export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, refreshTrigger, calculatorType }: OrderHistoryProps) {
   const { orders, loading, error, deleteOrder, clearAllOrders, refreshOrders } = useOrders();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -34,7 +35,6 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   const [materialFilter, setMaterialFilter] = useState<string>('all');
   const [serviceFilter, setServiceFilter] = useState<string>('all');
   const [priceRangeFilter, setPriceRangeFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
-  const [productTypeFilter, setProductTypeFilter] = useState<'all' | 'polygraphy' | 'tablets' | 'badges' | 'letters'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -91,9 +91,74 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
     return new Intl.NumberFormat('uz-UZ').format(amount) + ' so\'m';
   };
 
+  // Get materials relevant to the current calculator type
+  const getRelevantMaterials = () => {
+    if (calculatorType === 'polygraphy') {
+      return [
+        { value: 'banner', label: 'Баннер' },
+        { value: 'oracal', label: 'Оракал' },
+        { value: 'setka', label: 'Сеточный оракал' },
+        { value: 'prozrachka', label: 'Прозрачный оракал' },
+        { value: 'holst', label: 'Холст' },
+        { value: 'bekprint', label: 'Бекпринт' }
+      ];
+    } else if (calculatorType === 'tablets') {
+      return [
+        { value: 'romark', label: 'Romark tablichka' },
+        { value: 'plexiglass', label: 'Orgsteklo (Plexiglass) tablichka' },
+        { value: 'acrylic', label: 'Akril tablichka' },
+        { value: 'badge', label: 'Beydjik (7x4 cm)' },
+        { value: 'premium_badge', label: 'Premium beydjik (7x4 cm)' },
+        { value: 'statue', label: 'Statuetka (Acrylic)' },
+        { value: 'bolt', label: 'Distansion bolt' },
+        { value: 'stand_orgsteklo_3mm', label: 'Stend Orgsteklo (3mm)' },
+        { value: 'stand_orgsteklo_5mm', label: 'Stend Orgsteklo (5mm)' },
+        { value: 'stand_alyukabond', label: 'Stend Alyukabond' },
+        { value: 'stand_fomiks', label: 'Stend Fomiks' }
+      ];
+    } else if (calculatorType === 'letters') {
+      return [
+        { value: 'volumetric_no_led', label: 'Обьемная буква (Без диод)' },
+        { value: 'volumetric_simple', label: 'Обьемная буква (Простой)' },
+        { value: 'volumetric_mesh', label: 'Обьемная буква (Сеточний)' },
+        { value: 'volumetric_contour', label: 'Обьемная буква (Контройорный)' },
+        { value: 'volumetric_acrylic_border', label: 'Обьемная буква (Борт акрил)' },
+        { value: 'volumetric_dotted', label: 'Обьемная буква (Точечные)' },
+        { value: 'light_box', label: 'Световой короб (акрил)' },
+        { value: 'fabric_light_box', label: 'Тканевые световые короба' }
+      ];
+    }
+    return []; // Return empty array if no calculator type specified
+  };
+
+  // Get services relevant to the current calculator type
+  const getRelevantServices = () => {
+    if (calculatorType === 'polygraphy') {
+      return [
+        { value: 'none', label: 'Xizmat yo\'q' },
+        { value: 'banner_ustanovka', label: 'Установка баннера' },
+        { value: 'banner_ustanovka_reika', label: 'Установка баннера с рейкой' },
+        { value: 'banner_bez_ustanovki_reika', label: 'Без установки с рейкой' },
+        { value: 'holst_ustanovka', label: 'Установка холста' },
+        { value: 'holst_ustanovka_reika', label: 'Установка холста с рейкой' },
+        { value: 'oracal_ustanovka', label: 'Установка оракала' },
+        { value: 'oracal_ustanovka_demontaj', label: 'Установка + демонтаж оракала' }
+      ];
+    } else if (calculatorType === 'tablets' || calculatorType === 'letters') {
+      return [
+        { value: 'none', label: 'Xizmat yo\'q' }
+      ];
+    }
+    return []; // Return empty array if no calculator type specified
+  };
+
   // Filter orders based on all filters
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
+      // Calculator type filter - show only orders from the current calculator
+      if (calculatorType && order.calculatorType !== calculatorType) {
+        return false;
+      }
       // Date filter
       if (dateFilter !== 'all') {
         const now = new Date();
@@ -152,85 +217,6 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
         }
       }
 
-      // Product type filter
-      if (productTypeFilter !== 'all') {
-        const hasBadge = order.state.items.some(item => item.name.toLowerCase().includes('beydjik')) ||
-        // Check if the selected material is a badge material
-        (order.state.selectedMaterial && (
-          order.state.selectedMaterial === 'badge' ||
-          order.state.selectedMaterial === 'premium_badge'
-        ));
-        const hasTablet = order.state.items.some(item => 
-          item.name.toLowerCase().includes('tablichka') || 
-          item.name.toLowerCase().includes('romark') ||
-          item.name.toLowerCase().includes('orgsteklo') ||
-          item.name.toLowerCase().includes('akril') ||
-          item.name.toLowerCase().includes('statuetka') ||
-          item.name.toLowerCase().includes('bolt') ||
-          item.name.toLowerCase().includes('stend')
-        ) ||
-        // Check if the selected material is a tablet material
-        (order.state.selectedMaterial && (
-          order.state.selectedMaterial === 'romark' ||
-          order.state.selectedMaterial === 'plexiglass' ||
-          order.state.selectedMaterial === 'acrylic' ||
-          order.state.selectedMaterial === 'statue' ||
-          order.state.selectedMaterial === 'bolt' ||
-          order.state.selectedMaterial === 'stand_orgsteklo_3mm' ||
-          order.state.selectedMaterial === 'stand_orgsteklo_5mm' ||
-          order.state.selectedMaterial === 'stand_alyukabond' ||
-          order.state.selectedMaterial === 'stand_fomiks'
-        ));
-        const hasPolygraphy = order.state.items.some(item => 
-          item.name.toLowerCase().includes('banner') ||
-          item.name.toLowerCase().includes('oracal') ||
-          item.name.toLowerCase().includes('holst') ||
-          item.name.toLowerCase().includes('bekprint')
-        ) || 
-        // Check if the selected material is a polygraphy material
-        (order.state.selectedMaterial && (
-          order.state.selectedMaterial === 'banner' ||
-          order.state.selectedMaterial === 'oracal' ||
-          order.state.selectedMaterial === 'setka' ||
-          order.state.selectedMaterial === 'prozrachka' ||
-          order.state.selectedMaterial === 'holst' ||
-          order.state.selectedMaterial === 'bekprint'
-        ));
-        const hasLetters = order.state.items.some(item => 
-          item.name.toLowerCase().includes('обьемная буква') ||
-          item.name.toLowerCase().includes('volumetric') ||
-          item.name.toLowerCase().includes('akril') && item.name.toLowerCase().includes('harf') ||
-          item.name.toLowerCase().includes('световой короб') ||
-          item.name.toLowerCase().includes('light box') ||
-          item.name.toLowerCase().includes('тканевые световые короба')
-        ) ||
-        // Check if the selected material is a volumetric letter material or light box
-        (order.state.selectedMaterial && (
-          order.state.selectedMaterial === 'volumetric_no_led' ||
-          order.state.selectedMaterial === 'volumetric_simple' ||
-          order.state.selectedMaterial === 'volumetric_mesh' ||
-          order.state.selectedMaterial === 'volumetric_contour' ||
-          order.state.selectedMaterial === 'volumetric_acrylic_border' ||
-          order.state.selectedMaterial === 'volumetric_dotted' ||
-          order.state.selectedMaterial === 'light_box' ||
-          order.state.selectedMaterial === 'fabric_light_box'
-        ));
-
-        switch (productTypeFilter) {
-          case 'badges':
-            if (!hasBadge) return false;
-            break;
-          case 'tablets':
-            if (!hasTablet) return false;
-            break;
-          case 'polygraphy':
-            if (!hasPolygraphy) return false;
-            break;
-          case 'letters':
-            if (!hasLetters) return false;
-            break;
-        }
-      }
 
       // Search query filter
       if (searchQuery.trim()) {
@@ -242,7 +228,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
 
       return true;
     });
-  }, [orders, dateFilter, customStartDate, customEndDate, materialFilter, serviceFilter, priceRangeFilter, productTypeFilter, searchQuery]);
+  }, [orders, calculatorType, dateFilter, customStartDate, customEndDate, materialFilter, serviceFilter, priceRangeFilter, searchQuery]);
 
   const clearFilters = () => {
     setDateFilter('all');
@@ -251,7 +237,6 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
     setMaterialFilter('all');
     setServiceFilter('all');
     setPriceRangeFilter('all');
-    setProductTypeFilter('all');
     setSearchQuery('');
   };
 
@@ -507,21 +492,6 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="product-type-filter">Mahsulot turi</Label>
-                        <Select value={productTypeFilter} onValueChange={(value: any) => setProductTypeFilter(value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Mahsulot turini tanlang" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Barcha mahsulotlar</SelectItem>
-                            <SelectItem value="polygraphy">Poligrafiya</SelectItem>
-                            <SelectItem value="tablets">Tablichkalar</SelectItem>
-                            <SelectItem value="badges">Beydjiklar</SelectItem>
-                            <SelectItem value="letters">Harflar (Bukvalar)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="date-filter">Sana bo'yicha</Label>
@@ -547,31 +517,11 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Barcha materiallar</SelectItem>
-                            <SelectItem value="banner">Баннер</SelectItem>
-                            <SelectItem value="oracal">Оракал</SelectItem>
-                            <SelectItem value="setka">Сеточный оракал</SelectItem>
-                            <SelectItem value="prozrachka">Прозрачный оракал</SelectItem>
-                            <SelectItem value="holst">Холст</SelectItem>
-                            <SelectItem value="bekprint">Бекпринт</SelectItem>
-                            <SelectItem value="romark">Romark tablichka</SelectItem>
-                            <SelectItem value="plexiglass">Orgsteklo (Plexiglass) tablichka</SelectItem>
-                            <SelectItem value="acrylic">Akril tablichka</SelectItem>
-                            <SelectItem value="volumetric_no_led">Обьемная буква (Без диод)</SelectItem>
-                            <SelectItem value="volumetric_simple">Обьемная буква (Простой)</SelectItem>
-                            <SelectItem value="volumetric_mesh">Обьемная буква (Сеточний)</SelectItem>
-                            <SelectItem value="volumetric_contour">Обьемная буква (Контройорный)</SelectItem>
-                            <SelectItem value="volumetric_acrylic_border">Обьемная буква (Борт акрил)</SelectItem>
-                            <SelectItem value="volumetric_dotted">Обьемная буква (Точечные)</SelectItem>
-                            <SelectItem value="light_box">Световой короб (акрил)</SelectItem>
-                            <SelectItem value="fabric_light_box">Тканевые световые короба</SelectItem>
-                            <SelectItem value="badge">Beydjik (7x4 cm)</SelectItem>
-                            <SelectItem value="premium_badge">Premium beydjik (7x4 cm)</SelectItem>
-                            <SelectItem value="statue">Statuetka (Acrylic)</SelectItem>
-                            <SelectItem value="bolt">Distansion bolt</SelectItem>
-                            <SelectItem value="stand_orgsteklo_3mm">Stend Orgsteklo (3mm)</SelectItem>
-                            <SelectItem value="stand_orgsteklo_5mm">Stend Orgsteklo (5mm)</SelectItem>
-                            <SelectItem value="stand_alyukabond">Stend Alyukabond</SelectItem>
-                            <SelectItem value="stand_fomiks">Stend Fomiks</SelectItem>
+                            {getRelevantMaterials().map((material) => (
+                              <SelectItem key={material.value} value={material.value}>
+                                {material.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -584,7 +534,11 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Barcha xizmatlar</SelectItem>
-                            <SelectItem value="none">Xizmat yo'q</SelectItem>
+                            {getRelevantServices().map((service) => (
+                              <SelectItem key={service.value} value={service.value}>
+                                {service.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -625,7 +579,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                       </div>
                     )}
                     
-                    {(dateFilter !== 'all' || materialFilter !== 'all' || serviceFilter !== 'all' || priceRangeFilter !== 'all' || productTypeFilter !== 'all' || searchQuery.trim()) && (
+                    {(dateFilter !== 'all' || materialFilter !== 'all' || serviceFilter !== 'all' || priceRangeFilter !== 'all' || searchQuery.trim()) && (
                       <div className="flex justify-end">
                         <Button
                           variant="outline"
