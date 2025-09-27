@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'logo.png', 'logo.svg'],
+      includeAssets: ['favicon.ico', 'icon.png', 'logo.svg'],
       manifest: {
         name: 'Professional Poligrafiya Kalkulyatori',
         short_name: 'PrintPro Calculator',
@@ -28,12 +28,12 @@ export default defineConfig(({ mode }) => ({
         start_url: '/',
         icons: [
           {
-            src: 'logo.png',
+            src: 'icon.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'logo.png',
+            src: 'icon.png',
             sizes: '512x512',
             type: 'image/png'
           }
