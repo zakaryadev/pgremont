@@ -84,16 +84,9 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
       }
       itemQuantity = parseInt(quantity);
     } else if (isTabletMaterial) {
-      // Tablichkalar uchun: eni va bo'yi
-      if (isCmToMTablet || isStendOrgsteklo) {
-        // CM dan M ga aylantirish: CM ÷ 100 = M
-        itemWidth = parseFloat(width) / 100;
-        itemHeight = parseFloat(height) / 100;
-      } else {
-        // Boshqa tablichkalar uchun: eni va bo'yi (m)
-        itemWidth = parseFloat(width);
-        itemHeight = parseFloat(height);
-      }
+      // Tablichkalar uchun: eni va bo'yi - hamma CM dan M ga aylantirish
+      itemWidth = parseFloat(width) / 100;
+      itemHeight = parseFloat(height) / 100;
       itemQuantity = parseInt(quantity);
     } else if (isBanner) {
       // Banner uchun: CM dan M ga aylantirish
@@ -116,9 +109,9 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
       itemHeight = 0;
       itemQuantity = parseInt(quantity);
     } else {
-      // Boshqa mahsulotlar uchun: eni va bo'yi (m)
-      itemWidth = parseFloat(width);
-      itemHeight = parseFloat(height);
+      // Boshqa mahsulotlar uchun: CM dan M ga aylantirish
+      itemWidth = parseFloat(width) / 100;
+      itemHeight = parseFloat(height) / 100;
       itemQuantity = parseInt(quantity);
     }
 
@@ -131,27 +124,38 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
       return;
     }
 
-    // Beydjik, bolt va statuetka bo'lmagan materiallar uchun o'lcham tekshiruvi
-    if (!isBadge && !isBolt && !isStatuetka && (isNaN(itemHeight) || itemHeight <= 0)) {
+    // Beydjik, bolt va statuetka bo'lmagan materiallar uchun o'lcham tekshiruvi (cm da)
+    if (!isBadge && !isBolt && !isStatuetka && (isNaN(parseFloat(height)) || parseFloat(height) <= 0)) {
       toast({
         title: "Xato",
-        description: (isAcrylicLetters || isVolumetricLetters) ? "Iltimos, harfning bo'yi maydoniga to'g'ri qiymat kiriting." : "Iltimos, bo'yi maydoniga to'g'ri qiymat kiriting.",
+        description: (isAcrylicLetters || isVolumetricLetters) ? "Iltimos, harfning bo'yi (cm) ni to'g'ri kiriting." : "Iltimos, ishning bo'yi (cm) ni to'g'ri kiriting.",
         variant: "destructive",
       });
       return;
     }
 
-    // Tablichkalar va light box uchun eni tekshiruvi
-    if (!isBadge && !isAcrylicLetters && !isVolumetricLetters && !isBolt && !isStatuetka && (isNaN(itemWidth) || itemWidth <= 0)) {
+    // Tablichkalar va light box uchun eni tekshiruvi (cm da)
+    if (!isBadge && !isAcrylicLetters && !isVolumetricLetters && !isBolt && !isStatuetka && (isNaN(parseFloat(width)) || parseFloat(width) <= 0)) {
       toast({
         title: "Xato",
-        description: "Iltimos, eni maydoniga to'g'ri qiymat kiriting.",
+        description: "Iltimos, ishning eni (cm) ni to'g'ri kiriting.",
         variant: "destructive",
       });
       return;
     }
 
-    // Tablichkalar uchun material eni tekshiruvi yo'q - hohlagancha o'lcham
+    // Ishning eni material enidan katta bo'lmasligini tekshirish
+    if (!isBadge && !isAcrylicLetters && !isVolumetricLetters && !isBolt && !isStatuetka && selectedWidth > 0) {
+      const workWidthInMeters = parseFloat(width) / 100; // CM dan M ga aylantirish
+      if (workWidthInMeters > selectedWidth) {
+        toast({
+          title: "Xato",
+          description: `Ishning eni (${workWidthInMeters.toFixed(2)}m) material enidan (${selectedWidth}m) katta bo'lishi mumkin emas.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     // Auto-generate product name based on material name
     // For banners, use material name + material width
@@ -207,15 +211,21 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
             {!isBolt && !isStatuetka && !isAcrylicLetters && !isVolumetricLetters && (
               <div>
                 <Label htmlFor="item-width" className="text-sm font-medium text-muted-foreground">
-                  Ishning eni {(isCmToMTablet || isStendOrgsteklo || isBanner || isFabricLightBox || isAcrylicLightBox) ? "(cm)" : "(m)"}
+                  Ishning eni (cm)
+                  {selectedWidth > 0 && (
+                    <span className="text-xs text-blue-600 ml-1">
+                      (maksimal: {Math.floor(selectedWidth * 100)}cm)
+                    </span>
+                  )}
                 </Label>
                 <Input
                   id="item-width"
                   type="number"
                   value={width}
                   onChange={(e) => setWidth(e.target.value)}
-                  placeholder={(isCmToMTablet || isStendOrgsteklo || isBanner || isFabricLightBox || isAcrylicLightBox) ? "Masalan: 150" : "Masalan: 1.5"}
+                  placeholder="Masalan: 150"
                   step="0.01"
+                  max={selectedWidth > 0 ? Math.floor(selectedWidth * 100) : undefined}
                   className="mt-1"
                   required
                 />
@@ -225,14 +235,14 @@ export function ItemForm({ selectedWidth, materialPrice, materialName, selectedS
             {!isStatuetka && !isBolt && (
               <div>
                 <Label htmlFor="item-height" className="text-sm font-medium text-muted-foreground">
-                  {(isAcrylicLetters || isVolumetricLetters) ? "Harfning bo'yi (cm)" : `Ishning bo'yi ${(isCmToMTablet || isStendOrgsteklo || isBanner || isFabricLightBox || isAcrylicLightBox) ? "(cm)" : "(m)"}`}
+                  {(isAcrylicLetters || isVolumetricLetters) ? "Harfning bo'yi (cm)" : "Ishning bo'yi (cm)"}
                 </Label>
                 <Input
                   id="item-height"
                   type="number"
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  placeholder={(isAcrylicLetters || isVolumetricLetters) ? "Masalan: 50" : ((isCmToMTablet || isStendOrgsteklo || isBanner || isFabricLightBox || isAcrylicLightBox) ? "Masalan: 200" : "Masalan: 2.0")}
+                  placeholder={(isAcrylicLetters || isVolumetricLetters) ? "Masalan: 50" : "Masalan: 200"}
                   step={(isAcrylicLetters || isVolumetricLetters) ? "1" : "0.01"}
                   className="mt-1"
                   required
