@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MaterialSelector } from "./MaterialSelector";
 import { WidthSelector } from "./WidthSelector";
 import { ItemForm } from "./ItemForm";
@@ -15,88 +15,117 @@ import { tableMaterials as initialMaterials, tableServices as initialServices } 
 import { CalculatorState, Item, CalculationResults, Material, Service, ServiceVisibility, Order } from "../../types/calculator";
 import { useOrders } from "../../hooks/useOrders";
 import { useToast } from "../../hooks/use-toast";
+import { useCalculatorPersistence } from "../../hooks/useCalculatorPersistence";
 import { Link } from "react-router-dom";
 
 export function TabletCalculator() {
-  const [materials, setMaterials] = useState(initialMaterials);
-  const [services, setServices] = useState(initialServices);
   const [serviceVisibility, setServiceVisibility] = useState<ServiceVisibility>({});
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [state, setState] = useState<CalculatorState>({
-    items: [],
-    selectedMaterial: 'romark',
-    selectedWidth: 0, // Tablitsalar uchun eni kerak
-    selectedService: 'none',
-    discountPercentage: 0,
-  });
-
+  
   const { saveOrder, refreshOrders } = useOrders();
   const { toast } = useToast();
+  
+  // Use persistent storage for calculator data
+  const {
+    data,
+    updateState,
+    updateMaterials,
+    updateServices,
+    updateMaterialPrice,
+    updateMaterialWastePrice,
+    updateServicePrice,
+  } = useCalculatorPersistence('tablets');
+
+  // Initialize with saved data or defaults
+  const [materials, setMaterials] = useState(initialMaterials);
+  const [services, setServices] = useState(initialServices);
+  const [state, setState] = useState<CalculatorState>(data.state);
+
+  // Update local state when persistent data changes
+  useEffect(() => {
+    setState(data.state);
+    setMaterials(data.materials && Object.keys(data.materials).length > 0 ? data.materials : initialMaterials);
+    setServices(data.services && Object.keys(data.services).length > 0 ? data.services : initialServices);
+  }, [data]);
 
   const currentMaterial = materials[state.selectedMaterial];
 
   const selectMaterial = (materialKey: string) => {
-    setState(prev => ({
-      ...prev,
+    const newState = {
+      ...state,
       selectedMaterial: materialKey,
       selectedWidth: 0, // Tablichkalar uchun material eni yo'q
       selectedService: 'none', // Reset service when material changes
-    }));
+    };
+    setState(newState);
+    updateState(newState);
   };
 
   const selectService = (serviceKey: string) => {
-    setState(prev => ({
-      ...prev,
+    const newState = {
+      ...state,
       selectedService: serviceKey,
-    }));
+    };
+    setState(newState);
+    updateState(newState);
   };
 
   const addItem = (item: Item) => {
-    setState(prev => ({
-      ...prev,
-      items: [...prev.items, item],
-    }));
+    const newState = {
+      ...state,
+      items: [...state.items, item],
+    };
+    setState(newState);
+    updateState(newState);
   };
 
   const deleteItem = (index: number) => {
-    setState(prev => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
+    const newState = {
+      ...state,
+      items: state.items.filter((_, i) => i !== index),
+    };
+    setState(newState);
+    updateState(newState);
   };
 
-  const updateMaterialPrice = (materialKey: string, value: number) => {
+  const handleUpdateMaterialPrice = (materialKey: string, value: number) => {
     if (isNaN(value)) return;
-    setMaterials(prev => ({
-      ...prev,
+    const newMaterials = {
+      ...materials,
       [materialKey]: {
-        ...prev[materialKey],
+        ...materials[materialKey],
         price: value,
       }
-    }));
+    };
+    setMaterials(newMaterials);
+    updateMaterials(newMaterials);
   };
 
-  const updateMaterialWastePrice = (materialKey: string, value: number) => {
+  const handleUpdateMaterialWastePrice = (materialKey: string, value: number) => {
     if (isNaN(value)) return;
-    setMaterials(prev => ({
-      ...prev,
+    const newMaterials = {
+      ...materials,
       [materialKey]: {
-        ...prev[materialKey],
+        ...materials[materialKey],
         wastePrice: value,
       }
-    }));
+    };
+    setMaterials(newMaterials);
+    updateMaterials(newMaterials);
   };
 
-  const updateServicePrice = (serviceKey: string, value: number) => {
+  const handleUpdateServicePrice = (serviceKey: string, value: number) => {
     if (isNaN(value)) return;
-    setServices(prev => ({
-      ...prev,
+    const newServices = {
+      ...services,
       [serviceKey]: {
-        ...prev[serviceKey],
+        ...services[serviceKey],
         price: value,
       }
-    }));
+    };
+    setServices(newServices);
+    updateServices(newServices);
   };
 
   const toggleServiceVisibility = (serviceKey: string) => {
@@ -107,14 +136,16 @@ export function TabletCalculator() {
   };
 
   const toggleItemVisibility = (itemId: string) => {
-    setState(prev => ({
-      ...prev,
-      items: prev.items.map(item =>
+    const newState = {
+      ...state,
+      items: state.items.map(item =>
         item.id === itemId
           ? { ...item, isVisible: !item.isVisible }
           : item
       )
-    }));
+    };
+    setState(newState);
+    updateState(newState);
   };
 
   const handleSaveOrder = async (orderData: { name: string; phone?: string }) => {
@@ -139,6 +170,9 @@ export function TabletCalculator() {
     setState(order.state);
     setMaterials(order.materials);
     setServices(order.services);
+    updateState(order.state);
+    updateMaterials(order.materials);
+    updateServices(order.services);
     toast({
       title: "Buyurtma yuklandi",
       description: `"${order.name}" nomli buyurtma yuklandi`,
@@ -146,10 +180,12 @@ export function TabletCalculator() {
   };
 
   const handleDiscountChange = (percentage: number) => {
-    setState(prev => ({
-      ...prev,
+    const newState = {
+      ...state,
       discountPercentage: percentage,
-    }));
+    };
+    setState(newState);
+    updateState(newState);
   };
 
   const results = useMemo((): CalculationResults => {
@@ -328,8 +364,8 @@ export function TabletCalculator() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <PriceList
                 materials={materials}
-                onUpdateMaterialPrice={updateMaterialPrice}
-                onUpdateMaterialWastePrice={updateMaterialWastePrice}
+                onUpdateMaterialPrice={handleUpdateMaterialPrice}
+                onUpdateMaterialWastePrice={handleUpdateMaterialWastePrice}
               />
 
               <Results
