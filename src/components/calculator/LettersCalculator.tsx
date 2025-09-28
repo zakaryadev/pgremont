@@ -197,8 +197,8 @@ export function LettersCalculator() {
         totalMaterialUsed += itemMaterialUsed;
         
         // Light box uchun: eni(m) × bo'yi(m) × soni × narx per m²
-        const currentMaterialPrice = materials[state.selectedMaterial]?.price || item.materialPrice;
-        const itemMaterialCost = itemPrintArea * currentMaterialPrice;
+        const itemMaterialPrice = item.materialPrice;
+        const itemMaterialCost = itemPrintArea * itemMaterialPrice;
         totalMaterialCost += itemMaterialCost;
         
         // Light box uchun chiqindi yo'q
@@ -214,8 +214,8 @@ export function LettersCalculator() {
         totalMaterialUsed += itemMaterialUsed;
 
         // Bukvalar uchun: balandlik(cm) × soni × narx
-        const currentMaterialPrice = materials[state.selectedMaterial]?.price || item.materialPrice;
-        const itemMaterialCost = item.height * item.quantity * currentMaterialPrice;
+        const itemMaterialPrice = item.materialPrice;
+        const itemMaterialCost = item.height * item.quantity * itemMaterialPrice;
         totalMaterialCost += itemMaterialCost;
 
         // Bukvalar uchun chiqindi yo'q

@@ -216,9 +216,9 @@ export function PolygraphyCalculator() {
       const itemMaterialUsed = item.materialWidth * item.height * item.quantity;
       totalMaterialUsed += itemMaterialUsed;
 
-      // Calculate material cost for this specific item using current material price
-      const currentMaterialPrice = materials[state.selectedMaterial]?.price || item.materialPrice;
-      const itemMaterialCost = itemPrintArea * currentMaterialPrice;
+      // Calculate material cost for this specific item using its own saved material price
+      const itemMaterialPrice = item.materialPrice;
+      const itemMaterialCost = itemPrintArea * itemMaterialPrice;
       totalMaterialCost += itemMaterialCost;
 
       // Calculate waste cost for this specific item
@@ -226,7 +226,7 @@ export function PolygraphyCalculator() {
       // Find the waste price for this specific material
       const materialName = item.name.split(' ')[0];
       const material = Object.values(materials).find(m => m.name === materialName);
-      const itemWastePrice = material?.wastePrice || currentMaterial.wastePrice;
+      const itemWastePrice = material?.wastePrice || 0;
       const itemWasteCost = itemWaste * itemWastePrice;
       totalWasteCost += itemWasteCost;
 
