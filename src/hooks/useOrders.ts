@@ -3,44 +3,44 @@ import { Order, CalculatorState, CalculationResults, Material, Service } from '.
 import { supabase } from '../integrations/supabase/client';
 
 export function useOrders() {
+  
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadOrders = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const { data, error: fetchError } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+    const loadOrders = useCallback(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const { data, error: fetchError } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (fetchError) {
-        throw fetchError;
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        const formattedOrders: Order[] = (data || []).map((order: any) => ({
+          id: order.id,
+          name: order.name,
+          phone: order.phone || undefined,
+          createdAt: new Date(order.created_at),
+          state: order.state,
+          results: order.results,
+          materials: order.materials,
+          services: order.services,
+          calculatorType: order.calculator_type || 'polygraphy'
+        }));
+
+        setOrders(formattedOrders);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load orders');
+      } finally {
+        setLoading(false);
       }
-
-      const formattedOrders: Order[] = (data || []).map((order: any) => ({
-        id: order.id,
-        name: order.name,
-        phone: order.phone || undefined,
-        createdAt: new Date(order.created_at),
-        state: order.state,
-        results: order.results,
-        materials: order.materials,
-        services: order.services,
-        calculatorType: order.calculator_type || 'polygraphy'
-      }));
-
-      setOrders(formattedOrders);
-    } catch (err) {
-      console.error('Failed to load orders from Supabase:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load orders');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    }, []);
 
   // Load orders from Supabase on mount
   useEffect(() => {

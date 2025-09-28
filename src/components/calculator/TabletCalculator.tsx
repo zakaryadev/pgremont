@@ -19,6 +19,7 @@ import { useCalculatorPersistence } from "../../hooks/useCalculatorPersistence";
 import { Link } from "react-router-dom";
 
 export function TabletCalculator() {
+  
   const [serviceVisibility, setServiceVisibility] = useState<ServiceVisibility>({});
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -42,12 +43,16 @@ export function TabletCalculator() {
   const [services, setServices] = useState(initialServices);
   const [state, setState] = useState<CalculatorState>(data.state);
 
-  // Update local state when persistent data changes
+  // Update local state when persistent data changes (only on initial load)
   useEffect(() => {
-    setState(data.state);
-    setMaterials(data.materials && Object.keys(data.materials).length > 0 ? data.materials : initialMaterials);
-    setServices(data.services && Object.keys(data.services).length > 0 ? data.services : initialServices);
+    // Only update if current state is empty (initial load)
+    if (state.items.length === 0 && Object.keys(materials).length === 0 && Object.keys(services).length === 0) {
+      setState(data.state);
+      setMaterials(data.materials && Object.keys(data.materials).length > 0 ? data.materials : initialMaterials);
+      setServices(data.services && Object.keys(data.services).length > 0 ? data.services : initialServices);
+    }
   }, [data]);
+
 
   const currentMaterial = materials[state.selectedMaterial];
 
@@ -98,8 +103,28 @@ export function TabletCalculator() {
         price: value,
       }
     };
+    
+    // Update material price in existing items that use this material
+    const updatedItems = state.items.map(item => {
+      // If this item uses the updated material, update its materialPrice
+      if (item.name.includes(materials[materialKey].name.split(' ')[0])) {
+        return {
+          ...item,
+          materialPrice: value
+        };
+      }
+      return item;
+    });
+    
+    const newState = {
+      ...state,
+      items: updatedItems
+    };
+    
     setMaterials(newMaterials);
+    setState(newState);
     updateMaterials(newMaterials);
+    updateState(newState);
   };
 
   const handleUpdateMaterialWastePrice = (materialKey: string, value: number) => {
@@ -151,11 +176,23 @@ export function TabletCalculator() {
   const handleSaveOrder = async (orderData: { name: string; phone?: string }) => {
     try {
       await saveOrder(orderData.name, state, results, materials, services, orderData.phone, 'tablets');
+      
+      // Clear the form after successful save
+      const defaultState = {
+        items: [],
+        selectedMaterial: 'romark',
+        selectedWidth: 0,
+        selectedService: 'none',
+        discountPercentage: 0,
+      };
+      setState(defaultState);
+      updateState(defaultState);
+      
       // Trigger refresh in OrderHistory component
       setRefreshTrigger(prev => prev + 1);
       toast({
         title: "Buyurtma saqlandi",
-        description: `"${orderData.name}" nomli buyurtma muvaffaqiyatli saqlandi`,
+        description: `"${orderData.name}" nomli buyurtma muvaffaqiyatli saqlandi va forma tozalandi`,
       });
     } catch (error) {
       toast({
@@ -167,12 +204,34 @@ export function TabletCalculator() {
   };
 
   const handleLoadOrder = (order: Order) => {
-    setState(order.state);
-    setMaterials(order.materials);
-    setServices(order.services);
-    updateState(order.state);
-    updateMaterials(order.materials);
-    updateServices(order.services);
+    // Ensure items exist and have proper structure
+    if (!order.state.items || !Array.isArray(order.state.items)) {
+      toast({
+        title: "Xatolik",
+        description: "Buyurtma ma'lumotlari buzilgan",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Force state update with a new object to ensure React detects the change
+    const newState = { ...order.state };
+    const newMaterials = { ...order.materials };
+    const newServices = { ...order.services };
+
+    // Update state
+    setState(newState);
+    setMaterials(newMaterials);
+    setServices(newServices);
+    
+    // Update persistent storage
+    updateState(newState);
+    updateMaterials(newMaterials);
+    updateServices(newServices);
+    
+    console.log('\n✅ State muvaffaqiyatli yangilandi!');
+    console.log('='.repeat(50));
+    
     toast({
       title: "Buyurtma yuklandi",
       description: `"${order.name}" nomli buyurtma yuklandi`,

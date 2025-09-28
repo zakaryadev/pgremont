@@ -25,7 +25,9 @@ interface OrderHistoryProps {
 }
 
 export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, refreshTrigger, calculatorType }: OrderHistoryProps) {
+
   const { orders, loading, error, deleteOrder, clearAllOrders, refreshOrders } = useOrders();
+
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
@@ -55,35 +57,35 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const orderDate = new Date(date);
     const orderDateOnly = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
-    
+
     // Agar bugun bo'lsa
     if (orderDateOnly.getTime() === today.getTime()) {
-      return `Bugun, ${orderDate.toLocaleTimeString('uz-UZ', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      return `Bugun, ${orderDate.toLocaleTimeString('uz-UZ', {
+        hour: '2-digit',
+        minute: '2-digit'
       })}`;
     }
-    
+
     // Agar kecha bo'lsa
     if (orderDateOnly.getTime() === yesterday.getTime()) {
-      return `Kecha, ${orderDate.toLocaleTimeString('uz-UZ', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      return `Kecha, ${orderDate.toLocaleTimeString('uz-UZ', {
+        hour: '2-digit',
+        minute: '2-digit'
       })}`;
     }
-    
+
     // Boshqa hollarda to'liq sana - O'zbek tilida tushunarli format
     const day = orderDate.getDate();
     const month = orderDate.toLocaleDateString('uz-UZ', { month: 'long' });
     const year = orderDate.getFullYear();
-    const time = orderDate.toLocaleTimeString('uz-UZ', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    const time = orderDate.toLocaleTimeString('uz-UZ', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
-    
+
     return `${day} ${month} ${year}, ${time}`;
   };
 
@@ -154,7 +156,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
 
   // Filter orders based on all filters
   const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
+    const filtered = orders.filter(order => {
       // Calculator type filter - show only orders from the current calculator
       if (calculatorType && order.calculatorType !== calculatorType) {
         return false;
@@ -228,6 +230,9 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
 
       return true;
     });
+
+
+    return filtered;
   }, [orders, calculatorType, dateFilter, customStartDate, customEndDate, materialFilter, serviceFilter, priceRangeFilter, searchQuery]);
 
   const clearFilters = () => {
@@ -243,7 +248,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   const exportToExcel = async () => {
     try {
       setIsExporting(true);
-      
+
       // Prepare data for Excel
       const excelData = filteredOrders.map((order, index) => {
         const orderDate = new Date(order.createdAt);
@@ -322,7 +327,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
       for (let col = range.s.c; col <= range.e.c; col++) {
         const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
         if (!ws[cellAddress]) continue;
-        
+
         ws[cellAddress].s = headerStyle;
       }
 
@@ -335,7 +340,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
 
       // Save file
       XLSX.writeFile(wb, filename);
-      
+
     } catch (error) {
       console.error('Excel export xatosi:', error);
       alert('Excel faylini yuklab olishda xatolik yuz berdi!');
@@ -346,17 +351,17 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
 
   const handleDeleteOrder = async (orderId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // Show confirmation dialog
     const confirmed = window.confirm(
       'Bu buyurtmani o\'chirishni xohlaysizmi?\n\n' +
       'Bu amalni bekor qilib bo\'lmaydi!'
     );
-    
+
     if (!confirmed) {
       return; // User cancelled deletion
     }
-    
+
     try {
       setDeletingId(orderId);
       await deleteOrder(orderId);
@@ -375,11 +380,11 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
       'Bu amalni bekor qilib bo\'lmaydi!\n\n' +
       'Davom etishni xohlaysizmi?'
     );
-    
+
     if (!confirmed) {
       return; // User cancelled
     }
-    
+
     try {
       setClearing(true);
       await clearAllOrders();
@@ -399,9 +404,12 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
   };
 
   const handleLoadOrder = (order: Order) => {
+
     if (onLoadOrder) {
       onLoadOrder(order);
+    } else {
     }
+
     if (onClose) {
       onClose();
     } else {
@@ -439,16 +447,16 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
             Saqlangan barcha buyurtmalarni ko'ring va boshqaring
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-1">
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 {error}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={refreshOrders}
                   className="ml-2"
                 >
@@ -558,7 +566,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                         </Select>
                       </div>
                     </div>
-                    
+
                     {dateFilter === 'custom' && (
                       <div className="space-y-2">
                         <Label>Maxsus sana oralig'i</Label>
@@ -578,7 +586,7 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                         </div>
                       </div>
                     )}
-                    
+
                     {(dateFilter !== 'all' || materialFilter !== 'all' || serviceFilter !== 'all' || priceRangeFilter !== 'all' || searchQuery.trim()) && (
                       <div className="flex justify-end">
                         <Button
@@ -611,8 +619,8 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
-                <Button 
-                  variant="default" 
+                <Button
+                  variant="default"
                   size="sm"
                   onClick={exportToExcel}
                   disabled={isExporting || filteredOrders.length === 0}
@@ -624,8 +632,8 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
                   )}
                   Excel
                 </Button>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   size="sm"
                   onClick={handleClearAllOrders}
                   disabled={clearing}
@@ -667,85 +675,87 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
               </div>
             ) : (
               <div className="space-y-2 pb-1">
-                {filteredOrders.map((order) => (
-                  <Card 
-                    key={order.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow w-[80%] mx-auto"
-                    onClick={() => handleLoadOrder(order)}
-                  >
-                    <CardHeader className="pb-1 pt-2 px-2 sm:px-3">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-xs sm:text-sm truncate">{order.name}</CardTitle>
-                          <CardDescription className="text-xs mt-0.5">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              <span className="truncate text-xs">{formatDate(order.createdAt)}</span>
-                            </div>
-                            {order.phone && (
-                              <div className="flex items-center gap-1 mt-0.5">
-                                <Phone className="h-3 w-3" />
-                                <span className="truncate text-xs">{order.phone}</span>
+                {filteredOrders.map((order) => {
+                  return (
+                    <Card
+                      key={order.id}
+                      className="cursor-pointer hover:shadow-md t ransition-shadow w-[80%] mx-auto"
+                      onClick={() => onLoadOrder(order)}
+                    >
+                      <CardHeader className="pb-1 pt-2 px-2 sm:px-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-xs sm:text-sm truncate">{order.name}</CardTitle>
+                            <CardDescription className="text-xs mt-0.5">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <span className="truncate text-xs">{formatDate(order.createdAt)}</span>
                               </div>
-                            )}
-                          </CardDescription>
+                              {order.phone && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  <Phone className="h-3 w-3" />
+                                  <span className="truncate text-xs">{order.phone}</span>
+                                </div>
+                              )}
+                            </CardDescription>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleShowReceipt(order, e)}
+                              className="text-green-600 hover:text-green-700 h-5 w-5 sm:h-6 sm:w-6 p-0"
+                              title="Chekni ko'rish va PDF yuklash"
+                            >
+                              <FileText className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleDeleteOrder(order.id, e)}
+                              className="text-destructive hover:text-destructive h-5 w-5 sm:h-6 sm:w-6 p-0"
+                              disabled={deletingId === order.id}
+                              title="Buyurtmani o'chirish"
+                            >
+                              {deletingId === order.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => handleShowReceipt(order, e)}
-                            className="text-green-600 hover:text-green-700 h-5 w-5 sm:h-6 sm:w-6 p-0"
-                            title="Chekni ko'rish va PDF yuklash"
-                          >
-                            <FileText className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => handleDeleteOrder(order.id, e)}
-                            className="text-destructive hover:text-destructive h-5 w-5 sm:h-6 sm:w-6 p-0"
-                            disabled={deletingId === order.id}
-                            title="Buyurtmani o'chirish"
-                          >
-                            {deletingId === order.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0 pb-2 px-2 sm:px-3">
-                      <div className="space-y-1 sm:grid sm:grid-cols-2 sm:gap-1 sm:space-y-0 text-xs">
-                        <div className="flex flex-col">
-                          <span className="text-muted-foreground text-xs">Material:</span>
-                          <span className="font-medium text-xs">{order.materials[order.state.selectedMaterial]?.name || 'Tanlanmagan'}</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-muted-foreground text-xs">Mahsulotlar:</span>
-                          <span className="font-medium text-xs">{order.state.items.length} ta</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-muted-foreground text-xs">Xizmat:</span>
-                          <span className="font-medium text-xs">{order.services[order.state.selectedService]?.name || 'Xizmat yo\'q'}</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-muted-foreground text-xs">Narx:</span>
-                          <span className="font-medium text-primary text-xs">
-                            {formatCurrency(order.results.finalCost)}
-                          </span>
-                          {order.results.discountAmount > 0 && (
-                            <span className="text-green-600 text-xs">
-                              (Skidka: {order.state.discountPercentage}%)
+                      </CardHeader>
+                      <CardContent className="pt-0 pb-2 px-2 sm:px-3">
+                        <div className="space-y-1 sm:grid sm:grid-cols-2 sm:gap-1 sm:space-y-0 text-xs">
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground text-xs">Material:</span>
+                            <span className="font-medium text-xs">{order.materials[order.state.selectedMaterial]?.name || 'Tanlanmagan'}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground text-xs">Mahsulotlar:</span>
+                            <span className="font-medium text-xs">{order.state.items.length} ta</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground text-xs">Xizmat:</span>
+                            <span className="font-medium text-xs">{order.services[order.state.selectedService]?.name || 'Xizmat yo\'q'}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground text-xs">Narx:</span>
+                            <span className="font-medium text-primary text-xs">
+                              {formatCurrency(order.results.finalCost)}
                             </span>
-                          )}
+                            {order.results.discountAmount > 0 && (
+                              <span className="text-green-600 text-xs">
+                                (Skidka: {order.state.discountPercentage}%)
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             )}
           </ScrollArea>

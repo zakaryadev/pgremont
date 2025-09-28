@@ -15,11 +15,14 @@ import { OrderHistory } from './OrderHistory';
 import { DiscountInput } from './DiscountInput';
 import { useOrders } from '../../hooks/useOrders';
 import { useCalculatorPersistence } from '../../hooks/useCalculatorPersistence';
+import { useToast } from '../../hooks/use-toast';
 import { CalculatorState, Item, CalculationResults, Order } from '../../types/calculator';
 import { letterMaterials, letterServices } from '../../data/letterData';
 import { Link } from 'react-router-dom';
 
 export function LettersCalculator() {
+  const { toast } = useToast();
+  
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { saveOrder } = useOrders();
@@ -40,12 +43,16 @@ export function LettersCalculator() {
   const [services, setServices] = useState(letterServices);
   const [state, setState] = useState<CalculatorState>(data.state);
 
-  // Update local state when persistent data changes
+  // Update local state when persistent data changes (only on initial load)
   useEffect(() => {
-    setState(data.state);
-    setMaterials(data.materials && Object.keys(data.materials).length > 0 ? data.materials : letterMaterials);
-    setServices(data.services && Object.keys(data.services).length > 0 ? data.services : letterServices);
+    // Only update if current state is empty (initial load)
+    if (state.items.length === 0 && Object.keys(materials).length === 0 && Object.keys(services).length === 0) {
+      setState(data.state);
+      setMaterials(data.materials && Object.keys(data.materials).length > 0 ? data.materials : letterMaterials);
+      setServices(data.services && Object.keys(data.services).length > 0 ? data.services : letterServices);
+    }
   }, [data]);
+
 
   const currentMaterial = materials[state.selectedMaterial];
 
@@ -110,8 +117,28 @@ export function LettersCalculator() {
         price: value,
       }
     };
+    
+    // Update material price in existing items that use this material
+    const updatedItems = state.items.map(item => {
+      // If this item uses the updated material, update its materialPrice
+      if (item.name.includes(materials[materialKey].name.split(' ')[0])) {
+        return {
+          ...item,
+          materialPrice: value
+        };
+      }
+      return item;
+    });
+    
+    const newState = {
+      ...state,
+      items: updatedItems
+    };
+    
     setMaterials(newMaterials);
+    setState(newState);
     updateMaterials(newMaterials);
+    updateState(newState);
   };
 
   const handleUpdateMaterialWastePrice = (materialKey: string, value: number) => {
@@ -143,29 +170,63 @@ export function LettersCalculator() {
   const handleSaveOrder = async (orderData: { name: string; phone?: string }) => {
     try {
       await saveOrder(orderData.name, state, results, materials, services, orderData.phone, 'letters');
-      setRefreshTrigger(prev => prev + 1);
       
-      // Reset calculator
-      setState({
+      // Clear the form after successful save
+      const defaultState = {
         items: [],
         selectedMaterial: 'volumetric_no_led',
         selectedWidth: 0,
         selectedService: 'none',
         discountPercentage: 0,
+      };
+      setState(defaultState);
+      updateState(defaultState);
+      
+      setRefreshTrigger(prev => prev + 1);
+      toast({
+        title: "Buyurtma saqlandi",
+        description: `"${orderData.name}" nomli buyurtma muvaffaqiyatli saqlandi va forma tozalandi`,
       });
     } catch (error) {
       console.error('Failed to save order:', error);
+      toast({
+        title: "Xatolik",
+        description: "Buyurtmani saqlashda xatolik yuz berdi",
+        variant: "destructive",
+      });
     }
   };
 
   const handleLoadOrder = (order: Order) => {
-    setState(order.state);
-    setMaterials(order.materials);
-    setServices(order.services);
-    updateState(order.state);
-    updateMaterials(order.materials);
-    updateServices(order.services);
-    setShowOrderHistory(false);
+    // Ensure items exist and have proper structure
+    if (!order.state.items || !Array.isArray(order.state.items)) {
+      toast({
+        title: "Xatolik",
+        description: "Buyurtma ma'lumotlari buzilgan",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Force state update with a new object to ensure React detects the change
+    const newState = { ...order.state };
+    const newMaterials = { ...order.materials };
+    const newServices = { ...order.services };
+
+    // Update state
+    setState(newState);
+    setMaterials(newMaterials);
+    setServices(newServices);
+    
+    // Update persistent storage
+    updateState(newState);
+    updateMaterials(newMaterials);
+    updateServices(newServices);
+
+    toast({
+      title: "Buyurtma yuklandi",
+      description: `"${order.name}" nomli buyurtma yuklandi`,
+    });
   };
 
   const handleDiscountChange = (percentage: number) => {
