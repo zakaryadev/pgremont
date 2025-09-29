@@ -45,8 +45,8 @@ export function PolygraphyCalculator() {
 
   // Update local state when persistent data changes (only on initial load)
   useEffect(() => {
-    // Only update if current state is empty (initial load)
-    if (state.items.length === 0 && Object.keys(materials).length === 0 && Object.keys(services).length === 0) {
+    // Load saved data if it exists and is different from current state
+    if (data.state.items.length > 0 || Object.keys(data.materials).length > 0 || Object.keys(data.services).length > 0) {
       setState(data.state);
       setMaterials(data.materials && Object.keys(data.materials).length > 0 ? data.materials : initialMaterials);
       setServices(data.services && Object.keys(data.services).length > 0 ? data.services : initialServices);
