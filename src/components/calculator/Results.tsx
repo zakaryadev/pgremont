@@ -32,8 +32,13 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
   // Get material waste price for specific item
   const getItemMaterialWastePrice = (item: Item) => {
     // Find material by name and get waste price
-    const materialName = item.name.split(' ')[0]; // Get material name from item name
-    const material = Object.values(materials).find(m => m.name === materialName);
+    // Try to match the full material name first, then fall back to partial matching
+    let material = Object.values(materials).find(m => item.name.includes(m.name));
+    if (!material) {
+      // Fallback to partial matching for backward compatibility
+      const materialName = item.name.split(' ')[0]; // Get material name from item name
+      material = Object.values(materials).find(m => m.name.includes(materialName));
+    }
     return material?.wastePrice || 0;
   };
 
@@ -320,7 +325,14 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
           items.filter(item => item.isVisible).forEach(item => {
             const itemMaterialPrice = getItemMaterialPrice(item);
             const details = getItemDetails(item, itemMaterialPrice);
-            const materialKey = `${item.name.split(' ')[0]} (${item.materialWidth}m)`;
+            // Try to match the full material name first, then fall back to partial matching
+            let material = Object.values(materials).find(m => item.name.includes(m.name));
+            if (!material) {
+              // Fallback to partial matching for backward compatibility
+              const materialName = item.name.split(' ')[0];
+              material = Object.values(materials).find(m => m.name.includes(materialName));
+            }
+            const materialKey = `${material?.name || item.name.split(' ')[0]} (${item.materialWidth}m)`;
             
             if (materialWasteMap.has(materialKey)) {
               const existing = materialWasteMap.get(materialKey);

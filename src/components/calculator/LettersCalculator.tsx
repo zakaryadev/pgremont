@@ -121,7 +121,9 @@ export function LettersCalculator() {
     // Update material price in existing items that use this material
     const updatedItems = state.items.map(item => {
       // If this item uses the updated material, update its materialPrice
-      if (item.name.includes(materials[materialKey].name.split(' ')[0])) {
+      // Try to match the full material name first, then fall back to partial matching
+      if (item.name.includes(materials[materialKey].name) || 
+          item.name.includes(materials[materialKey].name.split(' ')[0])) {
         return {
           ...item,
           materialPrice: value

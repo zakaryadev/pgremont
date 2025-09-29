@@ -118,7 +118,9 @@ export function PolygraphyCalculator() {
     // Update material price in existing items that use this material
     const updatedItems = state.items.map(item => {
       // If this item uses the updated material, update its materialPrice
-      if (item.name.includes(materials[materialKey].name.split(' ')[0])) {
+      // Try to match the full material name first, then fall back to partial matching
+      if (item.name.includes(materials[materialKey].name) || 
+          item.name.includes(materials[materialKey].name.split(' ')[0])) {
         return {
           ...item,
           materialPrice: value
@@ -260,8 +262,13 @@ export function PolygraphyCalculator() {
       // Calculate waste cost for this specific item
       const itemWaste = Math.abs(itemMaterialUsed - itemPrintArea);
       // Find the waste price for this specific material
-      const materialName = item.name.split(' ')[0];
-      const material = Object.values(materials).find(m => m.name === materialName);
+      // Try to match the full material name first, then fall back to partial matching
+      let material = Object.values(materials).find(m => item.name.includes(m.name));
+      if (!material) {
+        // Fallback to partial matching for backward compatibility
+        const materialName = item.name.split(' ')[0];
+        material = Object.values(materials).find(m => m.name.includes(materialName));
+      }
       const itemWastePrice = material?.wastePrice || 0;
       const itemWasteCost = itemWaste * itemWastePrice;
       totalWasteCost += itemWasteCost;
