@@ -36,27 +36,42 @@ export function useCalculatorPersistence(calculatorType: 'polygraphy' | 'tablets
 
   // Load data from localStorage on mount
   useEffect(() => {
+    console.log(`🔄 ${calculatorType} kalkulyatori yuklanmoqda...`);
     const savedData = localStorage.getItem(`calculator_${calculatorType}`);
+    console.log(`📁 Saqlangan ma'lumotlar:`, savedData ? 'Mavjud' : 'Yo\'q');
+    
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData);
+        console.log(`📊 Parsed data:`, parsedData);
+        
         // Ensure materials and services are not empty objects
         const dataWithDefaults = {
           ...parsedData,
           materials: parsedData.materials && Object.keys(parsedData.materials).length > 0 ? parsedData.materials : {},
           services: parsedData.services && Object.keys(parsedData.services).length > 0 ? parsedData.services : {},
         };
+        console.log(`✅ ${calculatorType} ma'lumotlari yuklandi:`, dataWithDefaults);
         setData(dataWithDefaults);
       } catch (error) {
-        console.error('Failed to parse saved calculator data:', error);
+        console.error('❌ Failed to parse saved calculator data:', error);
       }
+    } else {
+      console.log(`🆕 ${calculatorType} uchun yangi ma'lumotlar yaratilmoqda...`);
     }
   }, [calculatorType]);
 
   // Save data to localStorage whenever it changes
   const saveData = useCallback((newData: CalculatorData) => {
+    console.log(`💾 ${calculatorType} ma'lumotlari saqlanmoqda...`);
+    console.log(`📊 Saqlanayotgan data:`, newData);
     setData(newData);
     localStorage.setItem(`calculator_${calculatorType}`, JSON.stringify(newData));
+    console.log(`✅ ${calculatorType} ma'lumotlari localStorage'ga saqlandi`);
+    
+    // Verify save
+    const saved = localStorage.getItem(`calculator_${calculatorType}`);
+    console.log(`🔍 Saqlangan ma'lumotlar tekshiruvi:`, saved ? 'Mavjud' : 'Yo\'q');
   }, [calculatorType]);
 
   // Update state

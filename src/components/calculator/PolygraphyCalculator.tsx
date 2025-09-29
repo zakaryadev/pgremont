@@ -20,11 +20,11 @@ import { Link } from "react-router-dom";
 
 export function PolygraphyCalculator() {
 
-  const [serviceVisibility, setServiceVisibility] = useState<ServiceVisibility>({});
+  // const [serviceVisibility, setServiceVisibility] = useState<ServiceVisibility>({});
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const { saveOrder, refreshOrders } = useOrders();
+  const { saveOrder } = useOrders();
   const { toast } = useToast();
 
   // Use persistent storage for calculator data
@@ -33,9 +33,9 @@ export function PolygraphyCalculator() {
     updateState,
     updateMaterials,
     updateServices,
-    updateMaterialPrice,
-    updateMaterialWastePrice,
-    updateServicePrice,
+    // updateMaterialPrice,
+    // updateMaterialWastePrice,
+    // updateServicePrice,
   } = useCalculatorPersistence('polygraphy');
 
   // Initialize with saved data or defaults
