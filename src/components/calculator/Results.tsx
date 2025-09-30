@@ -48,7 +48,8 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
     const isBadge = item.name.toLowerCase().includes('beydjik');
     const isAcrylicLetters = item.name.toLowerCase().includes('akril');
     const isVolumetricLetters = item.name.toLowerCase().includes('обьемная буква') || item.name.toLowerCase().includes('volumetric');
-    const isLightBox = item.name.toLowerCase().includes('световой короб') || item.name.toLowerCase().includes('light box');
+    const isLetters = isAcrylicLetters || isVolumetricLetters || item.name.toLowerCase().includes('буква') || item.name.toLowerCase().includes('обьемная');
+    const isLightBox = item.name.toLowerCase().includes('световой короб') || item.name.toLowerCase().includes('light box') || item.name.toLowerCase().includes('тканевые');
     const isStatuetka = item.name.toLowerCase().includes('statuetka');
     const isBolt = item.name.toLowerCase().includes('bolt');
     
@@ -61,11 +62,12 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
       printCost = item.quantity * itemMaterialPrice; // Soniga qarab narx
     } else if (isLightBox) {
       // Light box uchun: eni (m) × bo'yi (m) × soni × narx per m²
+      // Light box va fabric box uchun chiqindi bo'lmaydi, chunki o'lcham ixtiyoriy
       printArea = item.width * item.height * item.quantity;
-      materialUsed = printArea;
+      materialUsed = printArea; // Chiqindi yo'q, chunki o'lcham ixtiyoriy
       printCost = printArea * itemMaterialPrice; // maydon × narx per m²
-    } else if (isAcrylicLetters || isVolumetricLetters) {
-      // Akril harflar va ob'emli harflar uchun: balandlik (cm) × harf soni × narx
+    } else if (isLetters) {
+      // Harflar uchun: balandlik (cm) × harf soni × narx
       printArea = 0; // Maydon hisoblanmaydi
       materialUsed = 0; // Material sarfi hisoblanmaydi
       printCost = item.height * item.quantity * itemMaterialPrice; // balandlik (cm) × harf soni × narx
@@ -86,11 +88,12 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
       printCost = printArea * itemMaterialPrice;
     }
     
-    const waste = Math.abs(materialUsed - printArea);
-    const wastePercentage = materialUsed > 0 ? (waste / materialUsed) * 100 : 0;
-    const wastePrice = getItemMaterialWastePrice(item);
-    const wasteCost = waste * wastePrice;
-    const totalCost = printCost + wasteCost;
+    // Harflar kalkulyatori uchun chiqindi umuman hisoblanmaydi
+    const waste = 0; // Harflar uchun chiqindi yo'q
+    const wastePercentage = 0; // Harflar uchun chiqindi foizi yo'q
+    const wastePrice = 0; // Harflar uchun chiqindi narxi yo'q
+    const wasteCost = 0; // Harflar uchun chiqindi xarajati yo'q
+    const totalCost = printCost; // Faqat asosiy narx
 
     return {
       printArea,
@@ -105,6 +108,7 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
       isBadge, // Beydjik ekanligini qaytarish
       isAcrylicLetters, // Akril harflar ekanligini qaytarish
       isVolumetricLetters, // Ob'emli harflar ekanligini qaytarish
+      isLetters, // Harflar ekanligini qaytarish
       isLightBox, // Light box ekanligini qaytarish
       isStatuetka, // Statuetka ekanligini qaytarish
       isBolt // Bolt ekanligini qaytarish
@@ -189,8 +193,8 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
             );
           }
 
-          // Akril harflar va ob'emli harflar uchun alohida ko'rsatish
-          if (details.isAcrylicLetters || details.isVolumetricLetters) {
+          // Harflar uchun alohida ko'rsatish
+          if (details.isAcrylicLetters || details.isVolumetricLetters || details.isLetters) {
             return (
               <div key={item.id} className="border rounded-lg p-3 bg-green-50 border-green-200">
                 <div className="flex justify-between items-center mb-2">
@@ -293,10 +297,13 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
                   <span className="text-muted-foreground">Material:</span>
                   <span>{formatArea(details.materialUsed)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-destructive">Chiqindi:</span>
-                  <span className="text-destructive">{formatArea(details.waste)} ({details.wastePercentage.toFixed(1)}%)</span>
-                </div>
+                {/* Harflar kalkulyatori uchun chiqindi ko'rsatilmaydi */}
+                {!details.isLightBox && !details.isLetters && !details.isStatuetka && !details.isBolt && (
+                  <div className="flex justify-between">
+                    <span className="text-destructive">Chiqindi:</span>
+                    <span className="text-destructive">{formatArea(details.waste)} ({details.wastePercentage.toFixed(1)}%)</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Narx:</span>
                   <span className="font-medium">{formatCurrency(details.totalCost)}</span>
@@ -308,15 +315,20 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
 
         <Separator className="my-4" />
 
-        <div className="flex justify-between items-center">
-          <span className="text-muted-foreground">Jami bosma maydoni:</span>
-          <span className="font-semibold">{formatArea(results.totalPrintArea)}</span>
-        </div>
-        
-        <div className="flex justify-between items-center">
-          <span className="text-muted-foreground">Jami material sarfi:</span>
-          <span className="font-semibold">{formatArea(results.totalMaterialUsed)}</span>
-        </div>
+        {/* Harflar kalkulyatori uchun maydon ko'rsatilmaydi */}
+        {!isTablet && (
+          <>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">Jami bosma maydoni:</span>
+              <span className="font-semibold">{formatArea(results.totalPrintArea)}</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">Jami material sarfi:</span>
+              <span className="font-semibold">{formatArea(results.totalMaterialUsed)}</span>
+            </div>
+          </>
+        )}
         
         {/* Material bo'yicha chiqindilar - tablichkalar uchun ko'rsatilmaydi */}
         {!isTablet && (() => {

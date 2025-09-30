@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -14,230 +14,131 @@ import { OrderForm } from './OrderForm';
 import { OrderHistory } from './OrderHistory';
 import { DiscountInput } from './DiscountInput';
 import { useOrders } from '../../hooks/useOrders';
-import { useCalculatorPersistence } from '../../hooks/useCalculatorPersistence';
-import { useToast } from '../../hooks/use-toast';
 import { CalculatorState, Item, CalculationResults, Order } from '../../types/calculator';
 import { letterMaterials, letterServices } from '../../data/letterData';
-import { Link } from 'react-router-dom';
 
 export function LettersCalculator() {
-  const { toast } = useToast();
-  
+  const [state, setState] = useState<CalculatorState>({
+    items: [],
+    selectedMaterial: 'volumetric_no_led',
+    selectedWidth: 0, // Bukvalar uchun eni kerak emas
+    selectedService: 'none',
+    discountPercentage: 0,
+  });
+
+  const [materials, setMaterials] = useState(letterMaterials);
+  const [services, setServices] = useState(letterServices);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { saveOrder } = useOrders();
-  
-  // Use persistent storage for calculator data
-  const {
-    data,
-    updateState,
-    updateMaterials,
-    updateServices,
-    updateMaterialPrice,
-    updateMaterialWastePrice,
-    updateServicePrice,
-  } = useCalculatorPersistence('letters');
-
-  // Initialize with saved data or defaults
-  const [materials, setMaterials] = useState(letterMaterials);
-  const [services, setServices] = useState(letterServices);
-  const [state, setState] = useState<CalculatorState>(data.state);
-
-  // Update local state when persistent data changes (only on initial load)
-  useEffect(() => {
-    // Load saved data if it exists and is different from current state
-    if (data.state.items.length > 0 || Object.keys(data.materials).length > 0 || Object.keys(data.services).length > 0) {
-      setState(data.state);
-      setMaterials(data.materials && Object.keys(data.materials).length > 0 ? data.materials : letterMaterials);
-      setServices(data.services && Object.keys(data.services).length > 0 ? data.services : letterServices);
-    }
-  }, [data]);
-
 
   const currentMaterial = materials[state.selectedMaterial];
 
   const selectMaterial = (materialKey: string) => {
-    const newState = {
-      ...state,
+    setState(prev => ({
+      ...prev,
       selectedMaterial: materialKey,
       selectedWidth: 0, // Bukvalar uchun eni kerak emas
       selectedService: 'none', // Reset service when material changes
-    };
-    setState(newState);
-    updateState(newState);
+    }));
   };
 
 
   const selectService = (serviceKey: string) => {
-    const newState = {
-      ...state,
+    setState(prev => ({
+      ...prev,
       selectedService: serviceKey,
-    };
-    setState(newState);
-    updateState(newState);
+    }));
   };
 
   const addItem = (item: Item) => {
-    const newState = {
-      ...state,
-      items: [...state.items, item],
-    };
-    setState(newState);
-    updateState(newState);
+    setState(prev => ({
+      ...prev,
+      items: [...prev.items, item],
+    }));
   };
 
   const deleteItem = (index: number) => {
-    const newState = {
-      ...state,
-      items: state.items.filter((_, i) => i !== index),
-    };
-    setState(newState);
-    updateState(newState);
+    setState(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index),
+    }));
   };
 
   const toggleItemVisibility = (itemId: string) => {
-    const newState = {
-      ...state,
-      items: state.items.map(item =>
+    setState(prev => ({
+      ...prev,
+      items: prev.items.map(item =>
         item.id === itemId
           ? { ...item, isVisible: !item.isVisible }
           : item
       )
-    };
-    setState(newState);
-    updateState(newState);
+    }));
   };
 
-  const handleUpdateMaterialPrice = (materialKey: string, value: number) => {
+  const updateMaterialPrice = (materialKey: string, value: number) => {
     if (isNaN(value)) return;
-    const newMaterials = {
-      ...materials,
+    setMaterials(prev => ({
+      ...prev,
       [materialKey]: {
-        ...materials[materialKey],
+        ...prev[materialKey],
         price: value,
       }
-    };
-    
-    // Update material price in existing items that use this material
-    const updatedItems = state.items.map(item => {
-      // If this item uses the updated material, update its materialPrice
-      // Try to match the full material name first, then fall back to partial matching
-      if (item.name.includes(materials[materialKey].name) || 
-          item.name.includes(materials[materialKey].name.split(' ')[0])) {
-        return {
-          ...item,
-          materialPrice: value
-        };
-      }
-      return item;
-    });
-    
-    const newState = {
-      ...state,
-      items: updatedItems
-    };
-    
-    setMaterials(newMaterials);
-    setState(newState);
-    updateMaterials(newMaterials);
-    updateState(newState);
+    }));
   };
 
-  const handleUpdateMaterialWastePrice = (materialKey: string, value: number) => {
+  const updateMaterialWastePrice = (materialKey: string, value: number) => {
     if (isNaN(value)) return;
-    const newMaterials = {
-      ...materials,
+    setMaterials(prev => ({
+      ...prev,
       [materialKey]: {
-        ...materials[materialKey],
+        ...prev[materialKey],
         wastePrice: value,
       }
-    };
-    setMaterials(newMaterials);
-    updateMaterials(newMaterials);
+    }));
   };
 
-  const handleUpdateServicePrice = (serviceKey: string, value: number) => {
+  const updateServicePrice = (serviceKey: string, value: number) => {
     if (isNaN(value)) return;
-    const newServices = {
-      ...services,
+    setServices(prev => ({
+      ...prev,
       [serviceKey]: {
-        ...services[serviceKey],
+        ...prev[serviceKey],
         price: value,
       }
-    };
-    setServices(newServices);
-    updateServices(newServices);
+    }));
   };
 
   const handleSaveOrder = async (orderData: { name: string; phone?: string }) => {
     try {
-      await saveOrder(orderData.name, state, results, materials, services, orderData.phone, 'letters');
-      
-      // Clear the form after successful save
-      const defaultState = {
+      await saveOrder(orderData.name, state, results, materials, services, orderData.phone);
+      setRefreshTrigger(prev => prev + 1);
+
+      // Reset calculator
+      setState({
         items: [],
         selectedMaterial: 'volumetric_no_led',
         selectedWidth: 0,
         selectedService: 'none',
         discountPercentage: 0,
-      };
-      setState(defaultState);
-      updateState(defaultState);
-      
-      setRefreshTrigger(prev => prev + 1);
-      toast({
-        title: "Buyurtma saqlandi",
-        description: `"${orderData.name}" nomli buyurtma muvaffaqiyatli saqlandi va forma tozalandi`,
       });
     } catch (error) {
       console.error('Failed to save order:', error);
-      toast({
-        title: "Xatolik",
-        description: "Buyurtmani saqlashda xatolik yuz berdi",
-        variant: "destructive",
-      });
     }
   };
 
   const handleLoadOrder = (order: Order) => {
-    // Ensure items exist and have proper structure
-    if (!order.state.items || !Array.isArray(order.state.items)) {
-      toast({
-        title: "Xatolik",
-        description: "Buyurtma ma'lumotlari buzilgan",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Force state update with a new object to ensure React detects the change
-    const newState = { ...order.state };
-    const newMaterials = { ...order.materials };
-    const newServices = { ...order.services };
-
-    // Update state
-    setState(newState);
-    setMaterials(newMaterials);
-    setServices(newServices);
-    
-    // Update persistent storage
-    updateState(newState);
-    updateMaterials(newMaterials);
-    updateServices(newServices);
-
-    toast({
-      title: "Buyurtma yuklandi",
-      description: `"${order.name}" nomli buyurtma yuklandi`,
-    });
+    setState(order.state);
+    setMaterials(order.materials);
+    setServices(order.services);
+    setShowOrderHistory(false);
   };
 
   const handleDiscountChange = (percentage: number) => {
-    const newState = {
-      ...state,
+    setState(prev => ({
+      ...prev,
       discountPercentage: percentage,
-    };
-    setState(newState);
-    updateState(newState);
+    }));
   };
 
   const results = useMemo((): CalculationResults => {
@@ -249,21 +150,20 @@ export function LettersCalculator() {
 
     state.items.filter(item => item.isVisible).forEach(item => {
       // Light box uchun: eni(m) × bo'yi(m) × soni × narx per m²
-      const isLightBox = item.name.toLowerCase().includes('световой короб') || item.name.toLowerCase().includes('light box');
-      
+      const isLightBox = item.name.toLowerCase().includes('световой короб') || item.name.toLowerCase().includes('light box') || item.name.toLowerCase().includes('тканевые');
+
       if (isLightBox) {
         // Light box uchun maydon bo'yicha hisoblash
         const itemPrintArea = item.width * item.height * item.quantity;
         totalPrintArea += itemPrintArea;
-        
+
         const itemMaterialUsed = itemPrintArea; // Light box uchun material sarfi = maydon
         totalMaterialUsed += itemMaterialUsed;
-        
+
         // Light box uchun: eni(m) × bo'yi(m) × soni × narx per m²
-        const itemMaterialPrice = item.materialPrice;
-        const itemMaterialCost = itemPrintArea * itemMaterialPrice;
+        const itemMaterialCost = itemPrintArea * item.materialPrice;
         totalMaterialCost += itemMaterialCost;
-        
+
         // Light box uchun chiqindi yo'q
         const itemWaste = 0;
         const itemWasteCost = 0;
@@ -277,8 +177,7 @@ export function LettersCalculator() {
         totalMaterialUsed += itemMaterialUsed;
 
         // Bukvalar uchun: balandlik(cm) × soni × narx
-        const itemMaterialPrice = item.materialPrice;
-        const itemMaterialCost = item.height * item.quantity * itemMaterialPrice;
+        const itemMaterialCost = item.height * item.quantity * item.materialPrice;
         totalMaterialCost += itemMaterialCost;
 
         // Bukvalar uchun chiqindi yo'q
@@ -296,7 +195,7 @@ export function LettersCalculator() {
 
     const printCost = 0;
     const totalCost = totalMaterialCost; // Faqat material narxi
-    
+
     // Calculate discount
     const discountAmount = (totalCost * state.discountPercentage) / 100;
     const finalCost = totalCost - discountAmount;
@@ -314,20 +213,20 @@ export function LettersCalculator() {
       discountAmount,
       finalCost,
     };
-  }, [state, materials, services]);
+  }, [state, currentMaterial, services]);
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex flex-col items-center mb-4">
-          <Link to="/">
+            <a href="/">
               <img
                 src="/logo.png"
                 alt="TOGO GROUP Logo"
                 className="h-16 md:h-20 w-auto mb-4"
               />
-            </Link>
+            </a>
             <h1 className="text-3xl font-bold mb-2">Bukvalar kalkulyatori</h1>
             <p className="text-lg text-muted-foreground">
               O'lchamli harflar, yorug'lik korobi, akril va metal harflar uchun to'liq hisob-kitob
@@ -380,8 +279,7 @@ export function LettersCalculator() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <PriceList
                 materials={materials}
-                onUpdateMaterialPrice={handleUpdateMaterialPrice}
-                onUpdateMaterialWastePrice={handleUpdateMaterialWastePrice}
+                onUpdateMaterialPrice={updateMaterialPrice}
               />
               <Results
                 results={results}
@@ -396,7 +294,6 @@ export function LettersCalculator() {
               isOpen={showOrderHistory}
               onClose={() => setShowOrderHistory(false)}
               refreshTrigger={refreshTrigger}
-              calculatorType="letters"
             />
           </div>
         </div>
