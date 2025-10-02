@@ -43,13 +43,25 @@ export function PolygraphyCalculator() {
   const [services, setServices] = useState(initialServices);
   const [state, setState] = useState<CalculatorState>(data.state);
 
-  // Update local state when persistent data changes (only on initial load)
+  // Update local state when persistent data changes
   useEffect(() => {
-    // Load saved data if it exists and is different from current state
-    if (data.state.items.length > 0 || Object.keys(data.materials).length > 0 || Object.keys(data.services).length > 0) {
+    console.log(`🔄 PolygraphyCalculator: data o'zgargan, yangilanmoqda...`);
+    console.log(`📊 data.materials:`, data.materials);
+    console.log(`📊 current materials:`, materials);
+    
+    // Always update materials when data.materials changes
+    if (data.materials && Object.keys(data.materials).length > 0) {
+      setMaterials(data.materials);
+    }
+    
+    // Always update services when data.services changes
+    if (data.services && Object.keys(data.services).length > 0) {
+      setServices(data.services);
+    }
+    
+    // Update state if it has items or is different from current state
+    if (data.state.items.length > 0 || JSON.stringify(data.state) !== JSON.stringify(state)) {
       setState(data.state);
-      setMaterials(data.materials && Object.keys(data.materials).length > 0 ? data.materials : initialMaterials);
-      setServices(data.services && Object.keys(data.services).length > 0 ? data.services : initialServices);
     }
   }, [data]);
 
@@ -107,6 +119,8 @@ export function PolygraphyCalculator() {
 
   const handleUpdateMaterialPrice = (materialKey: string, value: number) => {
     if (isNaN(value)) return;
+    console.log(`🔄 Material narxi yangilanmoqda: ${materialKey} = ${value}`);
+    
     const newMaterials = {
       ...materials,
       [materialKey]: {
@@ -119,8 +133,13 @@ export function PolygraphyCalculator() {
     const updatedItems = state.items.map(item => {
       // If this item uses the updated material, update its materialPrice
       // Try to match the full material name first, then fall back to partial matching
-      if (item.name.includes(materials[materialKey].name) || 
-          item.name.includes(materials[materialKey].name.split(' ')[0])) {
+      const materialName = materials[materialKey].name;
+      const materialNameFirstWord = materialName.split(' ')[0];
+      
+      console.log(`🔍 Tekshirilmoqda: item="${item.name}", material="${materialName}", firstWord="${materialNameFirstWord}"`);
+      
+      if (item.name.includes(materialName) || item.name.includes(materialNameFirstWord)) {
+        console.log(`📝 Item yangilanmoqda: ${item.name}, eski narx: ${item.materialPrice}, yangi narx: ${value}`);
         return {
           ...item,
           materialPrice: value
@@ -134,6 +153,7 @@ export function PolygraphyCalculator() {
       items: updatedItems
     };
     
+    console.log(`💾 Yangi state saqlanmoqda:`, newState);
     setMaterials(newMaterials);
     setState(newState);
     updateMaterials(newMaterials);
@@ -254,8 +274,16 @@ export function PolygraphyCalculator() {
       const itemMaterialUsed = item.materialWidth * item.height * item.quantity;
       totalMaterialUsed += itemMaterialUsed;
 
-      // Calculate material cost for this specific item using its own saved material price
-      const itemMaterialPrice = item.materialPrice;
+      // Calculate material cost for this specific item using current material price
+      // Try to find current material price from materials object
+      let material = Object.values(materials).find(m => item.name.includes(m.name));
+      if (!material) {
+        // Fallback to partial matching for backward compatibility
+        const materialName = item.name.split(' ')[0];
+        material = Object.values(materials).find(m => m.name.includes(materialName));
+      }
+      // Always use current material price from materials object, not saved item.materialPrice
+      const itemMaterialPrice = material?.price || 0;
       const itemMaterialCost = itemPrintArea * itemMaterialPrice;
       totalMaterialCost += itemMaterialCost;
 
@@ -263,13 +291,13 @@ export function PolygraphyCalculator() {
       const itemWaste = Math.abs(itemMaterialUsed - itemPrintArea);
       // Find the waste price for this specific material
       // Try to match the full material name first, then fall back to partial matching
-      let material = Object.values(materials).find(m => item.name.includes(m.name));
-      if (!material) {
+      let materialForWaste = Object.values(materials).find(m => item.name.includes(m.name));
+      if (!materialForWaste) {
         // Fallback to partial matching for backward compatibility
         const materialName = item.name.split(' ')[0];
-        material = Object.values(materials).find(m => m.name.includes(materialName));
+        materialForWaste = Object.values(materials).find(m => m.name.includes(materialName));
       }
-      const itemWastePrice = material?.wastePrice || 0;
+      const itemWastePrice = materialForWaste?.wastePrice || 0;
       const itemWasteCost = itemWaste * itemWastePrice;
       totalWasteCost += itemWasteCost;
 

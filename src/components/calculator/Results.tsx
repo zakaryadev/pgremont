@@ -2,6 +2,7 @@ import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { CalculationResults, Item } from "../../types/calculator";
+import { memo } from "react";
 
 interface ResultsProps {
   results: CalculationResults;
@@ -11,7 +12,7 @@ interface ResultsProps {
   isTablet?: boolean; // Tablichka uchun flag
 }
 
-export function Results({ results, items, materialPrice, materials, isTablet = false }: ResultsProps) {
+function ResultsComponent({ results, items, materialPrice, materials, isTablet = false }: ResultsProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('uz-UZ', {
       minimumFractionDigits: 0,
@@ -25,8 +26,24 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
 
   // Get material price for specific item
   const getItemMaterialPrice = (item: Item) => {
-    // Use the material price saved with the item
-    return item.materialPrice;
+    // Try to find current material price from materials object
+    // This ensures we get the updated price when materials are changed
+    let material = Object.values(materials).find(m => item.name.includes(m.name));
+    if (!material) {
+      // Fallback to partial matching for backward compatibility
+      const materialName = item.name.split(' ')[0]; // Get material name from item name
+      material = Object.values(materials).find(m => m.name.includes(materialName));
+    }
+    
+    const currentPrice = material?.price || 0;
+    const savedPrice = item.materialPrice;
+    
+    if (currentPrice !== savedPrice) {
+      console.log(`💰 Item narxi farqi: ${item.name}, saqlangan: ${savedPrice}, hozirgi: ${currentPrice}`);
+    }
+    
+    // Always use current material price from materials object, not saved item.materialPrice
+    return currentPrice;
   };
 
   // Get material waste price for specific item
@@ -434,3 +451,6 @@ export function Results({ results, items, materialPrice, materials, isTablet = f
     </Card>
   );
 }
+
+// Export memoized component to prevent unnecessary re-renders
+export const Results = memo(ResultsComponent);

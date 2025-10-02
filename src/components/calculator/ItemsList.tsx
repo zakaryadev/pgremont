@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../ui/badge";
 import { Trash2, Eye, EyeOff } from "lucide-react";
 import { Item, Service } from "../../types/calculator";
+import { memo, useMemo, useCallback } from "react";
 
 interface ItemsListProps {
   items: Item[];
@@ -13,7 +14,39 @@ interface ItemsListProps {
   selectedMaterial?: string;
 }
 
-export function ItemsList({ items, onDeleteItem, onToggleVisibility, services, selectedMaterial }: ItemsListProps) {
+function ItemsListComponent({ items, onDeleteItem, onToggleVisibility, services, selectedMaterial }: ItemsListProps) {
+  // Memoize the table rows to prevent unnecessary re-renders
+  const tableRows = useMemo(() => {
+    return items.map((item, index) => {
+      const area = (item.width * item.height * item.quantity).toFixed(2);
+      
+      // Get service names
+      const assemblyServiceName = item.assemblyService && services?.[item.assemblyService] 
+        ? services[item.assemblyService].name 
+        : null;
+      const disassemblyServiceName = item.disassemblyService && services?.[item.disassemblyService] 
+        ? services[item.disassemblyService].name 
+        : null;
+      
+      return {
+        item,
+        index,
+        area,
+        assemblyServiceName,
+        disassemblyServiceName
+      };
+    });
+  }, [items, services]);
+
+  // Memoize callback functions to prevent child re-renders
+  const handleDeleteItem = useCallback((index: number) => {
+    onDeleteItem(index);
+  }, [onDeleteItem]);
+
+  const handleToggleVisibility = useCallback((itemId: string) => {
+    onToggleVisibility?.(itemId);
+  }, [onToggleVisibility]);
+
   return (
     <Card className="p-6 bg-gradient-to-br from-card to-muted/20">
       <h2 className="text-xl font-semibold mb-4 text-foreground">Qo'shilgan Ishlar Ro'yxati</h2>
@@ -38,79 +71,67 @@ export function ItemsList({ items, onDeleteItem, onToggleVisibility, services, s
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item, index) => {
-                const area = (item.width * item.height * item.quantity).toFixed(2);
-                
-                // Get service names
-                const assemblyServiceName = item.assemblyService && services?.[item.assemblyService] 
-                  ? services[item.assemblyService].name 
-                  : null;
-                const disassemblyServiceName = item.disassemblyService && services?.[item.disassemblyService] 
-                  ? services[item.disassemblyService].name 
-                  : null;
-                
-                return (
-                  <TableRow key={item.id} className={`hover:bg-muted/50 ${!item.isVisible ? 'opacity-50' : ''}`}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {item.isVisible ? (
-                          <Eye className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
-                        )}
-                        <Badge variant={item.isVisible ? "default" : "secondary"}>
-                          {item.isVisible ? "Ko'rinadi" : "Yashirin"}
+              {tableRows.map(({ item, index, area, assemblyServiceName, disassemblyServiceName }) => (
+                <TableRow key={item.id} className={`hover:bg-muted/50 ${!item.isVisible ? 'opacity-50' : ''}`}>
+                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {item.isVisible ? (
+                        <Eye className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      )}
+                      <Badge variant={item.isVisible ? "default" : "secondary"}>
+                        {item.isVisible ? "Ko'rinadi" : "Yashirin"}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium">{item.width}</TableCell>
+                  <TableCell>{item.height}</TableCell>
+                  <TableCell>{item.quantity}</TableCell>
+                  <TableCell className="font-semibold">{area}</TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      {assemblyServiceName && (
+                        <Badge variant="outline" className="text-xs">
+                          Montaj: {assemblyServiceName}
                         </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{item.width}</TableCell>
-                    <TableCell>{item.height}</TableCell>
-                    <TableCell>{item.quantity}</TableCell>
-                    <TableCell className="font-semibold">{area}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {assemblyServiceName && (
-                          <Badge variant="outline" className="text-xs">
-                            Montaj: {assemblyServiceName}
-                          </Badge>
-                        )}
-                        {disassemblyServiceName && (
-                          <Badge variant="outline" className="text-xs">
-                            Demontaj: {disassemblyServiceName}
-                          </Badge>
-                        )}
-                        {!assemblyServiceName && !disassemblyServiceName && (
-                          <span className="text-xs text-muted-foreground">Xizmat yo'q</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {onToggleVisibility && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onToggleVisibility(item.id)}
-                            className="h-8 w-8 p-0"
-                            title={item.isVisible ? "Yashirish" : "Ko'rsatish"}
-                          >
-                            {item.isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                        )}
+                      )}
+                      {disassemblyServiceName && (
+                        <Badge variant="outline" className="text-xs">
+                          Demontaj: {disassemblyServiceName}
+                        </Badge>
+                      )}
+                      {!assemblyServiceName && !disassemblyServiceName && (
+                        <span className="text-xs text-muted-foreground">Xizmat yo'q</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      {onToggleVisibility && (
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
-                          onClick={() => onDeleteItem(index)}
+                          onClick={() => handleToggleVisibility(item.id)}
                           className="h-8 w-8 p-0"
+                          title={item.isVisible ? "Yashirish" : "Ko'rsatish"}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {item.isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                      )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteItem(index)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
@@ -191,3 +212,6 @@ export function ItemsList({ items, onDeleteItem, onToggleVisibility, services, s
     </Card>
   );
 }
+
+// Export memoized component to prevent unnecessary re-renders
+export const ItemsList = memo(ItemsListComponent);
