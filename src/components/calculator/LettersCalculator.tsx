@@ -51,8 +51,9 @@ export function LettersCalculator() {
       setServices(data.services);
     }
     
-    // Update state if it has items or is different from current state
-    if (data.state.items.length > 0 || JSON.stringify(data.state) !== JSON.stringify(state)) {
+    // Update state if it has items
+    if (data.state.items.length > 0) {
+      console.log(`📝 State yangilanmoqda:`, data.state);
       setState(data.state);
     }
   }, [data]);
@@ -182,10 +183,36 @@ export function LettersCalculator() {
   };
 
   const handleLoadOrder = (order: Order) => {
-    setState(order.state);
-    setMaterials(order.materials);
-    setServices(order.services);
+    console.log(`📥 LettersCalculator: Buyurtma yuklanmoqda:`, order);
+    
+    // Ensure items exist and have proper structure
+    if (!order.state.items || !Array.isArray(order.state.items)) {
+      console.error('Buyurtma ma\'lumotlari buzilgan:', order);
+      return;
+    }
+
+    // Force state update with a new object to ensure React detects the change
+    const newState = { ...order.state };
+    const newMaterials = { ...order.materials };
+    const newServices = { ...order.services };
+
+    console.log(`📝 Yangi state:`, newState);
+    console.log(`📝 Yangi materials:`, newMaterials);
+    console.log(`📝 Yangi services:`, newServices);
+
+    // Update persistent storage first
+    updateState(newState);
+    updateMaterials(newMaterials);
+    updateServices(newServices);
+    
+    // Then update local state
+    setState(newState);
+    setMaterials(newMaterials);
+    setServices(newServices);
     setShowOrderHistory(false);
+    
+    console.log('\n✅ LettersCalculator: State muvaffaqiyatli yangilandi!');
+    console.log('='.repeat(50));
   };
 
   const handleDiscountChange = (percentage: number) => {

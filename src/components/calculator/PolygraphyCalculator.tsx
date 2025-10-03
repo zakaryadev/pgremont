@@ -59,8 +59,9 @@ export function PolygraphyCalculator() {
       setServices(data.services);
     }
     
-    // Update state if it has items or is different from current state
-    if (data.state.items.length > 0 || JSON.stringify(data.state) !== JSON.stringify(state)) {
+    // Update state if it has items
+    if (data.state.items.length > 0) {
+      console.log(`📝 State yangilanmoqda:`, data.state);
       setState(data.state);
     }
   }, [data]);
@@ -217,6 +218,8 @@ export function PolygraphyCalculator() {
   };
 
   const handleLoadOrder = (order: Order) => {
+    console.log(`📥 Buyurtma yuklanmoqda:`, order);
+    
     // Ensure items exist and have proper structure
     if (!order.state.items || !Array.isArray(order.state.items)) {
       toast({
@@ -232,15 +235,19 @@ export function PolygraphyCalculator() {
     const newMaterials = { ...order.materials };
     const newServices = { ...order.services };
 
-    // Update state
-    setState(newState);
-    setMaterials(newMaterials);
-    setServices(newServices);
+    console.log(`📝 Yangi state:`, newState);
+    console.log(`📝 Yangi materials:`, newMaterials);
+    console.log(`📝 Yangi services:`, newServices);
 
-    // Update persistent storage
+    // Update persistent storage first
     updateState(newState);
     updateMaterials(newMaterials);
     updateServices(newServices);
+
+    // Then update local state
+    setState(newState);
+    setMaterials(newMaterials);
+    setServices(newServices);
 
     toast({
       title: "Buyurtma yuklandi",

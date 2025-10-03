@@ -59,8 +59,9 @@ export function TabletCalculator() {
       setServices(data.services);
     }
     
-    // Update state if it has items or is different from current state
-    if (data.state.items.length > 0 || JSON.stringify(data.state) !== JSON.stringify(state)) {
+    // Update state if it has items
+    if (data.state.items.length > 0) {
+      console.log(`📝 State yangilanmoqda:`, data.state);
       setState(data.state);
     }
   }, [data]);
@@ -223,6 +224,8 @@ export function TabletCalculator() {
   };
 
   const handleLoadOrder = (order: Order) => {
+    console.log(`📥 TabletCalculator: Buyurtma yuklanmoqda:`, order);
+    
     // Ensure items exist and have proper structure
     if (!order.state.items || !Array.isArray(order.state.items)) {
       toast({
@@ -238,17 +241,21 @@ export function TabletCalculator() {
     const newMaterials = { ...order.materials };
     const newServices = { ...order.services };
 
-    // Update state
-    setState(newState);
-    setMaterials(newMaterials);
-    setServices(newServices);
-    
-    // Update persistent storage
+    console.log(`📝 Yangi state:`, newState);
+    console.log(`📝 Yangi materials:`, newMaterials);
+    console.log(`📝 Yangi services:`, newServices);
+
+    // Update persistent storage first
     updateState(newState);
     updateMaterials(newMaterials);
     updateServices(newServices);
     
-    console.log('\n✅ State muvaffaqiyatli yangilandi!');
+    // Then update local state
+    setState(newState);
+    setMaterials(newMaterials);
+    setServices(newServices);
+    
+    console.log('\n✅ TabletCalculator: State muvaffaqiyatli yangilandi!');
     console.log('='.repeat(50));
     
     toast({

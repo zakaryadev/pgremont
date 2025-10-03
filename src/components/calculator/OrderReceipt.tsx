@@ -1,7 +1,15 @@
 import React, { useRef } from 'react';
 import { Order } from '../../types/calculator';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+// Note: html2canvas and jspdf are loaded from CDN and available on the window object.
+// We are not importing them directly to avoid bundling errors in this environment.
+
+declare global {
+    interface Window {
+        html2canvas: any;
+        jspdf: any;
+    }
+}
+
 
 interface OrderReceiptProps {
   order: Order;
@@ -25,223 +33,184 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
     return `${day}.${month}.${year} ${hours}:${minutes}`;
   };
 
+  /**
+   * Generates a single-page PDF with a height matching the receipt content.
+   * This is the recommended method for thermal printers to avoid pagination.
+   */
   const downloadPDF = async () => {
-    if (!receiptRef.current) return;
+    const receiptElement = receiptRef.current;
+    if (!receiptElement || !window.html2canvas || !window.jspdf) {
+        console.error('Receipt element or required libraries (html2canvas, jspdf) not found!');
+        alert('Kerakli kutubxonalar topilmadi. Sahifani yangilang.');
+        return;
+    }
 
     try {
-      // Create canvas from the receipt element
-      const canvas = await html2canvas(receiptRef.current, {
-        scale: 2, // Higher quality
+      // Use html2canvas to capture the receipt element as an image (canvas)
+      const canvas = await window.html2canvas(receiptElement, {
+        scale: 2, // Increase for better quality
         useCORS: true,
         backgroundColor: '#ffffff',
-        width: 300,
-        height: receiptRef.current.scrollHeight,
       });
 
-      // Create PDF
       const imgData = canvas.toDataURL('image/png');
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+
+      // Set PDF width to match 58mm thermal paper (using 48mm for margins)
+      const pdfWidth = 48; 
+      // Calculate the PDF height based on the captured image's aspect ratio
+      const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
+
+      // Destructure jsPDF from the window object
+      const { jsPDF } = window.jspdf;
+
+      // Create a new jsPDF instance with the dynamic page size
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [80, 200] // Receipt size
+        // The format is [width, height], creating a single long page
+        format: [pdfWidth, pdfHeight],
       });
 
-      // Calculate dimensions
-      const imgWidth = 80;
-      const pageHeight = 200;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-
-      let position = 0;
-
-      // Add image to PDF
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      // Add new pages if needed
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      // Generate filename
+      // Add the captured image to the PDF, covering the entire page
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
       const fileName = `Chek_${order.name}_${formatDate(order.createdAt).replace(/[.:\s]/g, '_')}.pdf`;
-
-      // Download PDF
+      
+      // Save the generated PDF
       pdf.save(fileName);
+
     } catch (error) {
-      console.error('PDF yaratishda xatolik:', error);
+      console.error('Error creating PDF:', error);
       alert('PDF yaratishda xatolik yuz berdi!');
     }
   };
 
+  /**
+   * Uses the browser's default print function.
+   * NOTE: This may still cause pagination issues depending on the browser and printer driver.
+   * The @media print CSS helps, but the PDF method is more reliable.
+   */
   const printReceipt = () => {
     window.print();
   };
 
   return (
-    <div className="print-receipt">
+    <div className="print-receipt-wrapper">
+      {/* --- CSS Styles for Printing and Display --- */}
       <style>{`
+        /* Styles for the browser's print dialog (@media print) */
         @media print {
+          /* Attempt to create a continuous page roll */
           @page {
-            size: 80mm 200mm;
+            size: 48mm auto; /* Use 'auto' for height */
             margin: 0;
             padding: 0;
           }
           
-          * {
-            -webkit-print-color-adjust: exact !important;
-            color-adjust: exact !important;
-          }
-          
-          body {
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          
+          /* Hide everything on the page except for the receipt */
           body * {
             visibility: hidden;
           }
           
-          .print-receipt, .print-receipt * {
+          .print-receipt-wrapper, .receipt-container, .receipt-container * {
             visibility: visible !important;
           }
           
-          .print-receipt {
-            position: fixed !important;
+          .print-receipt-wrapper {
+            position: absolute !important;
             left: 0 !important;
             top: 0 !important;
-            width: 80mm !important;
-            height: auto !important;
-            min-height: 200mm !important;
-            background: white !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            font-family: 'Courier New', monospace !important;
-            font-size: 10px !important;
-            line-height: 1.2 !important;
-            overflow: visible !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            box-sizing: border-box !important;
-          }
-          
-          .receipt-container {
             width: 100% !important;
-            max-width: none !important;
+          }
+
+          .receipt-container {
+            width: 48mm !important;
+            height: auto !important;
             margin: 0 !important;
-            padding: 8px !important;
+            padding: 2mm !important;
             border: none !important;
             box-shadow: none !important;
-            page-break-inside: avoid !important;
+            font-size: 8px !important;
+            line-height: 1.2 !important;
+            /* Prevents breaking elements across pages */
             break-inside: avoid !important;
-            box-sizing: border-box !important;
-          }
-          
-          .receipt-logo-img {
-            height: 25px !important;
-            width: auto !important;
-            max-width: 100px !important;
-          }
-          
-          .receipt-section {
             page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            margin-bottom: 4px !important;
           }
-          
-          .receipt-items {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          
-          .receipt-item {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          
+
+          /* Hide the action buttons when printing */
           .no-print {
             display: none !important;
           }
         }
         
+        /* --- General styles for displaying the receipt on screen --- */
         .receipt-container {
-          max-width: 300px;
+          width: 180px; /* Width for on-screen view */
           margin: 0 auto;
           background: white;
           border: 1px solid #ddd;
-          padding: 15px;
+          padding: 6px;
           font-family: 'Courier New', monospace;
-          font-size: 10px;
+          font-size: 8px;
           line-height: 1.2;
         }
         
         .receipt-header {
           text-align: center;
           border-bottom: 1px dashed #333;
-          padding-bottom: 8px;
-          margin-bottom: 10px;
-        }
-        
-        .receipt-logo {
+          padding-bottom: 4px;
           margin-bottom: 6px;
         }
-        
+
         .receipt-logo-img {
-          height: 50px;
+          height: 30px;
           width: auto;
-        }
-        
-        .receipt-title {
-          font-size: 14px;
-          font-weight: bold;
-          margin-bottom: 4px;
+          margin: 0 auto 3px;
         }
         
         .receipt-subtitle {
-          font-size: 9px;
+          font-size: 7px;
           color: #666;
-          margin-bottom: 2px;
+          margin-bottom: 1px;
         }
         
         .receipt-section {
-          margin-bottom: 8px;
+          margin-bottom: 4px;
         }
         
         .receipt-section-title {
           font-weight: bold;
           border-bottom: 1px solid #333;
-          padding-bottom: 3px;
-          margin-bottom: 6px;
-          font-size: 11px;
+          padding-bottom: 1px;
+          margin-bottom: 3px;
+          font-size: 9px;
         }
         
         .receipt-row {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 3px;
-          align-items: center;
+          margin-bottom: 1px;
+          font-size: 7px;
         }
         
         .receipt-row-label {
-          flex: 1;
+          word-wrap: break-word;
         }
         
         .receipt-row-value {
-          flex: 1;
           text-align: right;
           font-weight: bold;
         }
         
         .receipt-items {
-          margin-bottom: 6px;
+          margin-bottom: 3px;
         }
         
         .receipt-item {
-          margin-bottom: 4px;
-          padding: 2px 0;
+          margin-bottom: 2px;
+          padding: 1px 0;
           border-bottom: 1px dotted #ccc;
         }
         
@@ -251,29 +220,30 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         
         .receipt-total {
           border-top: 2px solid #333;
-          padding-top: 8px;
-          margin-top: 10px;
+          padding-top: 4px;
+          margin-top: 6px;
           font-weight: bold;
-          font-size: 12px;
+          font-size: 9px;
         }
         
         .receipt-footer {
           text-align: center;
-          margin-top: 10px;
-          padding-top: 6px;
+          margin-top: 6px;
+          padding-top: 3px;
           border-top: 1px dashed #333;
-          font-size: 11px;
+          font-size: 8px;
           color: #666;
         }
       `}</style>
 
+      {/* --- Receipt Content --- */}
       <div ref={receiptRef} className="receipt-container">
         <div className="receipt-header">
-          <div className="w-[100%] receipt-logo text-center">
+          <div className="receipt-logo">
             <img
               src="/logo_chek.png"
               alt="TOGO GROUP Logo"
-              className="receipt-logo-img m-auto"
+              className="receipt-logo-img"
             />
           </div>
           <div className="receipt-subtitle">Professional Poligrafiya</div>
@@ -294,116 +264,53 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
             <span className="receipt-row-label">{formatDate(order.createdAt)}</span>
           </div>
           <div className="receipt-row">
-            <span className="receipt-row-label">Material: {order.materials[order.state.selectedMaterial]?.name || 'Tanlanmagan'}</span>
+            <span className="receipt-row-label">Mat: {order.materials[order.state.selectedMaterial]?.name || 'Tanlanmagan'}</span>
           </div>
           <div className="receipt-row">
-            <span className="receipt-row-label">Material narxi: {formatCurrency(order.materials[order.state.selectedMaterial]?.price || 0)}/m²</span>
+            <span className="receipt-row-label">Narx: {formatCurrency(order.materials[order.state.selectedMaterial]?.price || 0)}/m²</span>
           </div>
           <div className="receipt-row">
-            <span className="receipt-row-label">Chiqindi narxi: {formatCurrency(order.materials[order.state.selectedMaterial]?.wastePrice || 0)}/m²</span>
+            <span className="receipt-row-label">Xiz: {order.services[order.state.selectedService]?.name || 'Xizmat yo\'q'}</span>
           </div>
-          <div className="receipt-row">
-            <span className="receipt-row-label">Xizmat: {order.services[order.state.selectedService]?.name || 'Xizmat yo\'q'}</span>
-          </div>
-          {order.services[order.state.selectedService] && (
-            <div className="receipt-row">
-              <span className="receipt-row-label">Xizmat narxi: {formatCurrency(order.services[order.state.selectedService]?.price || 0)}</span>
-            </div>
-          )}
         </div>
 
         <div className="receipt-section">
           <div className="receipt-section-title">MAHSULOTLAR</div>
           <div className="receipt-items">
             {order.state.items.map((item, index) => {
-              // Beydjik ekanligini tekshirish
               const isBadge = item.name.toLowerCase().includes('beydjik');
               const isAcrylicLetters = item.name.toLowerCase().includes('akril');
               
               if (isBadge) {
-                // Beydjik uchun alohida ko'rsatish
                 return (
-                  <div key={item.id} className="receipt-item" style={{ backgroundColor: '#f0f9ff', border: '1px solid #0ea5e9' }}>
-                    <div className="receipt-row">
-                      <span className="receipt-row-label" style={{ color: '#0c4a6e', fontWeight: 'bold' }}>
-                        {index + 1}. {item.name}
-                      </span>
-                    </div>
-                    <div className="receipt-row">
-                      <span className="receipt-row-label" style={{ color: '#0c4a6e' }}>
-                        O'lcham: 7×4 cm (standart)
-                      </span>
-                    </div>
-                    <div className="receipt-row">
-                      <span className="receipt-row-label" style={{ color: '#0c4a6e' }}>
-                        Miqdor: {item.quantity} dona
-                      </span>
-                    </div>
-                    <div className="receipt-row">
-                      <span className="receipt-row-label" style={{ color: '#0c4a6e' }}>
-                        Bitta narx: {formatCurrency(item.materialPrice)}
-                      </span>
-                    </div>
-                    <div className="receipt-row">
-                      <span className="receipt-row-label" style={{ color: '#0c4a6e', fontWeight: 'bold' }}>
-                        Jami narx: {formatCurrency(item.quantity * item.materialPrice)}
-                      </span>
-                    </div>
+                  <div key={item.id} className="receipt-item">
+                    <div className="receipt-row"><span className="receipt-row-label" style={{ fontWeight: 'bold' }}>{index + 1}. {item.name}</span></div>
+                    <div className="receipt-row"><span className="receipt-row-label">7×4 cm</span></div>
+                    <div className="receipt-row"><span className="receipt-row-label">Soni: {item.quantity}</span></div>
+                    <div className="receipt-row"><span className="receipt-row-label">Narx: {formatCurrency(item.materialPrice)}</span></div>
+                    <div className="receipt-row"><span className="receipt-row-label" style={{ fontWeight: 'bold' }}>Jami: {formatCurrency(item.quantity * item.materialPrice)}</span></div>
                   </div>
                 );
               }
 
               if (isAcrylicLetters) {
-                // Akril harflar uchun alohida ko'rsatish
                 return (
-                  <div key={item.id} className="receipt-item" style={{ backgroundColor: '#f0fdf4', border: '1px solid #22c55e' }}>
-                    <div className="receipt-row">
-                      <span className="receipt-row-label" style={{ color: '#166534', fontWeight: 'bold' }}>
-                        {index + 1}. {item.name}
-                      </span>
-                    </div>
-                    <div className="receipt-row">
-                      <span className="receipt-row-label" style={{ color: '#166534' }}>
-                        Balandlik: {item.height} cm
-                      </span>
-                    </div>
-                    <div className="receipt-row">
-                      <span className="receipt-row-label" style={{ color: '#166534' }}>
-                        Harf soni: {item.quantity} ta
-                      </span>
-                    </div>
-                    <div className="receipt-row">
-                      <span className="receipt-row-label" style={{ color: '#166534' }}>
-                        1 cm narx: {formatCurrency(item.materialPrice)}
-                      </span>
-                    </div>
-                    <div className="receipt-row">
-                      <span className="receipt-row-label" style={{ color: '#166534', fontWeight: 'bold' }}>
-                        Jami narx: {formatCurrency(item.height * item.quantity * item.materialPrice)}
-                      </span>
-                    </div>
+                  <div key={item.id} className="receipt-item">
+                    <div className="receipt-row"><span className="receipt-row-label" style={{ fontWeight: 'bold' }}>{index + 1}. {item.name}</span></div>
+                    <div className="receipt-row"><span className="receipt-row-label">Baland: {item.height} cm</span></div>
+                    <div className="receipt-row"><span className="receipt-row-label">Soni: {item.quantity}</span></div>
+                    <div className="receipt-row"><span className="receipt-row-label">1 cm: {formatCurrency(item.materialPrice)}</span></div>
+                    <div className="receipt-row"><span className="receipt-row-label" style={{ fontWeight: 'bold' }}>Jami: {formatCurrency(item.height * item.quantity * item.materialPrice)}</span></div>
                   </div>
                 );
               }
               
-              // Boshqa mahsulotlar uchun oddiy ko'rsatish
               return (
                 <div key={item.id} className="receipt-item">
-                  <div className="receipt-row">
-                    <span className="receipt-row-label">{index + 1}. {item.name}</span>
-                  </div>
-                  <div className="receipt-row">
-                    <span className="receipt-row-label">O'lcham: {item.width}×{item.height} m</span>
-                  </div>
-                  <div className="receipt-row">
-                    <span className="receipt-row-label">Miqdor: {item.quantity} ta</span>
-                  </div>
-                  <div className="receipt-row">
-                    <span className="receipt-row-label">Maydon: {(item.width * item.height * item.quantity).toFixed(2)} m²</span>
-                  </div>
-                  <div className="receipt-row">
-                    <span className="receipt-row-label">Material eni: {item.materialWidth} m</span>
-                  </div>
+                  <div className="receipt-row"><span className="receipt-row-label">{index + 1}. {item.name}</span></div>
+                  <div className="receipt-row"><span className="receipt-row-label">{item.width}×{item.height} m</span></div>
+                  <div className="receipt-row"><span className="receipt-row-label">Soni: {item.quantity}</span></div>
+                  <div className="receipt-row"><span className="receipt-row-label">Maydon: {(item.width * item.height * item.quantity).toFixed(2)} m²</span></div>
                 </div>
               );
             })}
@@ -411,66 +318,24 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         </div>
 
         <div className="receipt-section">
-          <div className="receipt-section-title">HISOB-KITOB</div>
-          <div className="receipt-row">
-            <span className="receipt-row-label">Pechat maydoni: {order.results.totalPrintArea.toFixed(2)}m²</span>
-            <span className="receipt-row-value">{formatCurrency((order.materials[order.state.selectedMaterial]?.price || 0) * order.results.totalPrintArea)}</span>
-          </div>
-          <div className="receipt-row">
-            <span className="receipt-row-label">Material ishlatilgan: {order.results.totalMaterialUsed.toFixed(2)}m²</span>
-            <span className="receipt-row-value">{formatCurrency(order.results.materialCost)}</span>
-          </div>
-          <div className="receipt-row">
-            <span className="receipt-row-label">Chiqindi: {order.results.totalWaste.toFixed(2)}m² ({order.results.wastePercentage.toFixed(1)}%)</span>
-            <span className="receipt-row-value">{formatCurrency(order.results.wasteCost)}</span>
-          </div>
-          <div className="receipt-row">
-            <span className="receipt-row-label">Xizmat:</span>
-            <span className="receipt-row-value">{formatCurrency(order.results.serviceCost)}</span>
-          </div>
-        </div>
-
-        <div className="receipt-section">
-          <div className="receipt-section-title">NARXLAR</div>
-          <div className="receipt-row">
-            <span className="receipt-row-label">Material narxi:</span>
-            <span className="receipt-row-value">{formatCurrency(order.results.materialCost)}</span>
-          </div>
-          <div className="receipt-row">
-            <span className="receipt-row-label">Pechat narxi:</span>
-            <span className="receipt-row-value">{formatCurrency((order.materials[order.state.selectedMaterial]?.price || 0) * order.results.totalPrintArea)}</span>
-          </div>
-          <div className="receipt-row">
-            <span className="receipt-row-label">Chiqindi narxi:</span>
-            <span className="receipt-row-value">{formatCurrency(order.results.wasteCost)}</span>
-          </div>
-          <div className="receipt-row">
-            <span className="receipt-row-label">Xizmat narxi:</span>
-            <span className="receipt-row-value">{formatCurrency(order.results.serviceCost)}</span>
-          </div>
+          <div className="receipt-section-title">HISOB</div>
+          <div className="receipt-row"><span className="receipt-row-label">Pechat:</span><span className="receipt-row-value">{order.results.totalPrintArea.toFixed(2)}m²</span></div>
+          <div className="receipt-row"><span className="receipt-row-label">Material:</span><span className="receipt-row-value">{order.results.totalMaterialUsed.toFixed(2)}m²</span></div>
+          <div className="receipt-row"><span className="receipt-row-label">Chiqindi:</span><span className="receipt-row-value">{order.results.totalWaste.toFixed(2)}m²</span></div>
+          <div className="receipt-row"><span className="receipt-row-label">Xizmat:</span><span className="receipt-row-value">{formatCurrency(order.results.serviceCost)}</span></div>
         </div>
 
         <div className="receipt-total">
-          <div className="receipt-row">
-            <span className="receipt-row-label">Jami narx:</span>
-            <span className="receipt-row-value">{formatCurrency(order.results.totalCost)}</span>
-          </div>
-          
-          {/* Skidka ko'rsatish */}
+          <div className="receipt-row"><span className="receipt-row-label">Jami:</span><span className="receipt-row-value">{formatCurrency(order.results.totalCost)}</span></div>
           {order.results.discountAmount > 0 && (
             <div className="receipt-row">
               <span className="receipt-row-label">Skidka ({order.state.discountPercentage}%):</span>
-              <span className="receipt-row-value" style={{ color: '#16a34a' }}>
-                -{formatCurrency(order.results.discountAmount)}
-              </span>
+              <span className="receipt-row-value" style={{ color: '#16a34a' }}>-{formatCurrency(order.results.discountAmount)}</span>
             </div>
           )}
-          
-          <div className="receipt-row" style={{ borderTop: '2px solid #000', paddingTop: '8px', marginTop: '8px' }}>
-            <span className="receipt-row-label" style={{ fontWeight: 'bold', fontSize: '16px' }}>YAKUNIY NARX:</span>
-            <span className="receipt-row-value" style={{ fontWeight: 'bold', fontSize: '16px' }}>
-              {formatCurrency(order.results.finalCost)}
-            </span>
+          <div className="receipt-row" style={{ borderTop: '2px solid #000', paddingTop: '4px', marginTop: '4px' }}>
+            <span className="receipt-row-label" style={{ fontWeight: 'bold', fontSize: '10px' }}>YAKUNIY:</span>
+            <span className="receipt-row-value" style={{ fontWeight: 'bold', fontSize: '10px' }}>{formatCurrency(order.results.finalCost)}</span>
           </div>
         </div>
 
@@ -482,40 +347,13 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         </div>
       </div>
 
+      {/* --- Action Buttons (Not visible when printing) --- */}
       <div className="no-print" style={{ textAlign: 'center', marginTop: '20px' }}>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button
-            onClick={downloadPDF}
-            style={{
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px'
-            }}
-          >
+          <button onClick={downloadPDF} style={{ backgroundColor: '#28a745', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}>
             📄 PDF yuklash
           </button>
-          <button
-            onClick={printReceipt}
-            style={{
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px'
-            }}
-          >
+          <button onClick={printReceipt} style={{ backgroundColor: '#007bff', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' }}>
             🖨️ Chop etish
           </button>
         </div>
@@ -523,3 +361,4 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
     </div>
   );
 }
+
