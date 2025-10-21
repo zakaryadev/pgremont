@@ -53,7 +53,7 @@ export function useCustomerOrders() {
           phoneNumber: order.phone_number || undefined,
           totalAmount: totalAmount,
           paymentType: order.payment_type,
-          advancePayment: totalPaid, // Use total paid instead of just advance
+          advancePayment: parseFloat(order.advance_payment), // Use original advance_payment from database
           remainingBalance: Math.max(0, remainingBalance), // Ensure non-negative
           createdAt: new Date(order.created_at),
           updatedAt: new Date(order.updated_at)

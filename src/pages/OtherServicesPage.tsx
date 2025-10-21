@@ -29,8 +29,8 @@ const OtherServicesPage = () => {
     phoneNumber: '',
     totalAmount: '',
     paymentType: '',
-    advancePayment: '',
-    remainingBalance: ''
+    advancePayment: '0', // Always 0 for new orders
+    remainingBalance: '0' // Always 0 for new orders
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -40,15 +40,8 @@ const OtherServicesPage = () => {
       [field]: value
     };
 
-    // Auto-calculate remaining balance when advance payment or total amount changes
-    if (field === 'advancePayment' || field === 'totalAmount') {
-      const total = parseFloat(field === 'totalAmount' ? value : newFormData.totalAmount) || 0;
-      const advance = parseFloat(field === 'advancePayment' ? value : newFormData.advancePayment) || 0;
-      const remaining = total - advance;
-      
-      newFormData.remainingBalance = remaining >= 0 ? remaining.toFixed(0) : '0';
-    }
-
+    // For new orders, advance payment and remaining balance are always 0
+    // No need to calculate remaining balance for new orders
     setFormData(newFormData);
   };
 
@@ -114,8 +107,8 @@ const OtherServicesPage = () => {
         phoneNumber: '',
         totalAmount: '',
         paymentType: '',
-        advancePayment: '',
-        remainingBalance: ''
+        advancePayment: '0', // Always 0 for new orders
+        remainingBalance: '0' // Always 0 for new orders
       });
 
     } catch (error) {
@@ -225,13 +218,14 @@ const OtherServicesPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="advancePayment">AVANS</Label>
+                    <Label htmlFor="advancePayment">TO'LOV HOLATI</Label>
                     <Input
                       id="advancePayment"
-                      type="number"
-                      value={formData.advancePayment}
-                      onChange={(e) => handleInputChange('advancePayment', e.target.value)}
-                      placeholder="Avans summa"
+                      type="text"
+                      value="To'liq to'lov"
+                      readOnly
+                      className="bg-green-50 text-green-700 font-medium"
+                      placeholder="To'liq to'lov"
                     />
                   </div>
 
@@ -239,11 +233,11 @@ const OtherServicesPage = () => {
                     <Label htmlFor="remainingBalance">QOLDIQ</Label>
                     <Input
                       id="remainingBalance"
-                      type="number"
-                      value={formData.remainingBalance}
+                      type="text"
+                      value="0 so'm"
                       readOnly
-                      className="bg-muted"
-                      placeholder="Qolgan summa"
+                      className="bg-green-50 text-green-700 font-medium"
+                      placeholder="Qolgan summa yo'q"
                     />
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -29,6 +30,7 @@ import { CustomerOrder, useCustomerOrders } from '@/hooks/useCustomerOrders';
 import { useToast } from '@/hooks/use-toast';
 import { EditCustomerOrderModal } from './EditCustomerOrderModal';
 import { PaymentRecordModal } from './PaymentRecordModal';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CustomerOrdersTableProps {
   onEditOrder?: (order: CustomerOrder) => void;
@@ -188,6 +190,67 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
 
     return () => clearInterval(interval);
   }, [autoRefreshEnabled, refreshOrders]);
+
+  // Auto delete fully paid orders - only for orders with payment history
+  useEffect(() => {
+    const checkAndDeleteFullyPaid = async () => {
+      // Only check orders that have been paid through payment records (not new orders)
+      const ordersWithPaymentHistory = orders.filter(order => {
+        // Check if order has payment records by looking at advance payment
+        // New orders have advance_payment = 0, but they shouldn't be auto-deleted
+        // Only orders that were originally partially paid should be auto-deleted when fully paid
+        return order.remainingBalance <= 0 && order.advancePayment > 0;
+      });
+      
+      if (ordersWithPaymentHistory.length > 0) {
+        for (const order of ordersWithPaymentHistory) {
+          try {
+            // Show notification first
+            toast({
+              title: "To'liq to'langan buyurtma",
+              description: `${order.customerName} - Buyurtma to'liq to'langan, o'chirilmoqda...`,
+            });
+
+            // Wait 2 seconds to show the notification
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Delete related payment records (this will make advance_payment = 0 in the next refresh)
+            const { error: deleteError } = await supabase
+              .from('payment_records')
+              .delete()
+              .eq('order_id', order.id);
+
+            if (deleteError) {
+              throw deleteError;
+            }
+
+            toast({
+              title: "Buyurtma to'liq to'langan",
+              description: `${order.customerName} - Avans maydoni 0 ga tenglashtirildi`,
+            });
+
+          } catch (error) {
+            console.error('Failed to delete fully paid order:', error);
+            toast({
+              title: "Xatolik",
+              description: `${order.customerName} buyurtmasini o'chirishda xatolik yuz berdi`,
+              variant: "destructive"
+            });
+          }
+        }
+        
+        // Refresh orders after all deletions
+        setTimeout(() => {
+          refreshOrders();
+        }, 1000);
+      }
+    };
+
+    // Run check every 5 seconds
+    const interval = setInterval(checkAndDeleteFullyPaid, 5000);
+    
+    return () => clearInterval(interval);
+  }, [orders, refreshOrders, toast]);
 
   return (
     <div className="space-y-4">
