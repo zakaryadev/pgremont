@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import PolygraphyPage from "./pages/PolygraphyPage";
 import TabletsPage from "./pages/TabletsPage";
 import LettersPage from "./pages/LettersPage";
+import OtherServicesPage from "./pages/OtherServicesPage";
 import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 
@@ -48,6 +49,11 @@ const App = () => {
             <Route path="/letters" element={
               <ProtectedRoute>
                 <LettersPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/other-services" element={
+              <ProtectedRoute>
+                <OtherServicesPage />
               </ProtectedRoute>
             } />
             <Route path="/admin" element={

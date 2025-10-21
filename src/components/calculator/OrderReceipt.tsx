@@ -1,14 +1,7 @@
 import React, { useRef } from 'react';
 import { Order } from '../../types/calculator';
-// Note: html2canvas and jspdf are loaded from CDN and available on the window object.
-// We are not importing them directly to avoid bundling errors in this environment.
-
-declare global {
-    interface Window {
-        html2canvas: any;
-        jspdf: any;
-    }
-}
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 
 interface OrderReceiptProps {
@@ -39,18 +32,58 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
    */
   const downloadPDF = async () => {
     const receiptElement = receiptRef.current;
-    if (!receiptElement || !window.html2canvas || !window.jspdf) {
-        console.error('Receipt element or required libraries (html2canvas, jspdf) not found!');
-        alert('Kerakli kutubxonalar topilmadi. Sahifani yangilang.');
+    if (!receiptElement) {
+        console.error('Receipt element not found!');
+        alert('Chek elementi topilmadi.');
         return;
     }
 
     try {
+      console.log('Receipt element found:', receiptElement);
+      console.log('Element dimensions:', {
+        width: receiptElement.offsetWidth,
+        height: receiptElement.offsetHeight,
+        scrollHeight: receiptElement.scrollHeight
+      });
+
+      // Wait a bit to ensure the element is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Use html2canvas to capture the receipt element as an image (canvas)
-      const canvas = await window.html2canvas(receiptElement, {
-        scale: 2, // Increase for better quality
+      const canvas = await html2canvas(receiptElement, {
+        scale: 3, // Higher scale for better quality
         useCORS: true,
         backgroundColor: '#ffffff',
+        width: receiptElement.offsetWidth,
+        height: receiptElement.scrollHeight,
+        allowTaint: true,
+        logging: false, // Disable logging for cleaner output
+        onclone: (clonedDoc) => {
+          // Ensure the cloned document has the right styles
+          const clonedElement = clonedDoc.querySelector('.receipt-container') as HTMLElement;
+          if (clonedElement) {
+            clonedElement.style.fontFamily = 'Courier New, monospace';
+            clonedElement.style.fontSize = '12px'; // Larger font for better quality
+            clonedElement.style.lineHeight = '1.4';
+            clonedElement.style.color = '#000';
+            clonedElement.style.backgroundColor = '#fff';
+            clonedElement.style.width = '200px'; // Wider for better text rendering
+            clonedElement.style.padding = '10px';
+            
+            // Ensure all text elements have good contrast
+            const allTextElements = clonedElement.querySelectorAll('*');
+            allTextElements.forEach(el => {
+              const htmlEl = el as HTMLElement;
+              htmlEl.style.color = '#000';
+              htmlEl.style.fontFamily = 'Courier New, monospace';
+            });
+          }
+        }
+      });
+
+      console.log('Canvas created:', {
+        width: canvas.width,
+        height: canvas.height
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -62,8 +95,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
       // Calculate the PDF height based on the captured image's aspect ratio
       const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
 
-      // Destructure jsPDF from the window object
-      const { jsPDF } = window.jspdf;
+      console.log('PDF dimensions:', { pdfWidth, pdfHeight });
 
       // Create a new jsPDF instance with the dynamic page size
       const pdf = new jsPDF({
@@ -71,19 +103,22 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         unit: 'mm',
         // The format is [width, height], creating a single long page
         format: [pdfWidth, pdfHeight],
+        compress: false, // Disable compression for better quality
       });
 
-      // Add the captured image to the PDF, covering the entire page
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // Add the captured image to the PDF with high quality settings
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       
       const fileName = `Chek_${order.name}_${formatDate(order.createdAt).replace(/[.:\s]/g, '_')}.pdf`;
+      
+      console.log('Saving PDF:', fileName);
       
       // Save the generated PDF
       pdf.save(fileName);
 
     } catch (error) {
       console.error('Error creating PDF:', error);
-      alert('PDF yaratishda xatolik yuz berdi!');
+      alert('PDF yaratishda xatolik yuz berdi: ' + error.message);
     }
   };
 
@@ -102,9 +137,9 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
       <style>{`
         /* Styles for the browser's print dialog (@media print) */
         @media print {
-          /* Attempt to create a continuous page roll */
+          /* Set page size for thermal printer */
           @page {
-            size: 48mm auto; /* Use 'auto' for height */
+            size: 48mm 300mm; /* Fixed height to prevent compression */
             margin: 0;
             padding: 0;
           }
@@ -123,20 +158,37 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
+            height: 100vh !important;
+            overflow: visible !important;
           }
 
           .receipt-container {
             width: 48mm !important;
             height: auto !important;
             margin: 0 !important;
-            padding: 2mm !important;
+            padding: 3mm !important;
             border: none !important;
             box-shadow: none !important;
-            font-size: 8px !important;
-            line-height: 1.2 !important;
+            font-size: 9px !important;
+            line-height: 1.3 !important;
+            font-family: 'Courier New', monospace !important;
             /* Prevents breaking elements across pages */
             break-inside: avoid !important;
             page-break-inside: avoid !important;
+            page-break-after: avoid !important;
+            overflow: visible !important;
+          }
+
+          /* Ensure all sections don't break */
+          .receipt-header,
+          .receipt-section,
+          .receipt-items,
+          .receipt-item,
+          .receipt-total,
+          .receipt-footer {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            page-break-after: avoid !important;
           }
 
           /* Hide the action buttons when printing */
@@ -153,8 +205,8 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
           border: 1px solid #ddd;
           padding: 6px;
           font-family: 'Courier New', monospace;
-          font-size: 8px;
-          line-height: 1.2;
+          font-size: 9px;
+          line-height: 1.3;
         }
         
         .receipt-header {
@@ -171,28 +223,28 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         }
         
         .receipt-subtitle {
-          font-size: 7px;
+          font-size: 8px;
           color: #666;
-          margin-bottom: 1px;
+          margin-bottom: 2px;
         }
         
         .receipt-section {
-          margin-bottom: 4px;
+          margin-bottom: 5px;
         }
         
         .receipt-section-title {
           font-weight: bold;
           border-bottom: 1px solid #333;
-          padding-bottom: 1px;
-          margin-bottom: 3px;
-          font-size: 9px;
+          padding-bottom: 2px;
+          margin-bottom: 4px;
+          font-size: 10px;
         }
         
         .receipt-row {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 1px;
-          font-size: 7px;
+          margin-bottom: 2px;
+          font-size: 8px;
         }
         
         .receipt-row-label {
@@ -209,8 +261,8 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         }
         
         .receipt-item {
-          margin-bottom: 2px;
-          padding: 1px 0;
+          margin-bottom: 3px;
+          padding: 2px 0;
           border-bottom: 1px dotted #ccc;
         }
         
@@ -220,10 +272,10 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
         
         .receipt-total {
           border-top: 2px solid #333;
-          padding-top: 4px;
-          margin-top: 6px;
+          padding-top: 5px;
+          margin-top: 8px;
           font-weight: bold;
-          font-size: 9px;
+          font-size: 10px;
         }
         
         .receipt-footer {
@@ -237,7 +289,20 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
       `}</style>
 
       {/* --- Receipt Content --- */}
-      <div ref={receiptRef} className="receipt-container">
+      <div 
+        ref={receiptRef} 
+        className="receipt-container"
+        style={{
+          fontFamily: 'Courier New, monospace',
+          fontSize: '10px',
+          lineHeight: '1.4',
+          color: '#000',
+          backgroundColor: '#fff',
+          width: '200px',
+          margin: '0 auto',
+          fontWeight: 'normal'
+        }}
+      >
         <div className="receipt-header">
           <div className="receipt-logo">
             <img

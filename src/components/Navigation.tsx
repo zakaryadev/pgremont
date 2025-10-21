@@ -29,12 +29,18 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
       description: 'Romark, orgsteklo, akril tablichkalar, beydjik, statuetka va boltlar',
       icon: '📋'
     },
-      {
-        id: 'letters',
-        name: 'Bukvalar',
-        description: 'Korob va harflar',
-        icon: '🔤'
-      }
+    {
+      id: 'letters',
+      name: 'Bukvalar',
+      description: 'Korob va harflar',
+      icon: '🔤'
+    },
+    {
+      id: 'other-services',
+      name: 'Boshqa xizmatlar',
+      description: 'Mijoz ma\'lumotlari, to\'lov va buyurtma boshqaruvi',
+      icon: '⚙️'
+    }
   ];
 
 
@@ -135,7 +141,7 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
       {/* Categories */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-4 text-center">Yo'nalish turlarini tanlang:</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {calculators.map((calculator) => (
             <Card 
               key={calculator.id}

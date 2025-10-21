@@ -77,16 +77,16 @@ export function OrderHistory({ onLoadOrder, isOpen: externalIsOpen, onClose, ref
       })}`;
     }
 
-    // Boshqa hollarda to'liq sana - O'zbek tilida tushunarli format
-    const day = orderDate.getDate();
-    const month = orderDate.toLocaleDateString('uz-UZ', { month: 'long' });
+    // Boshqa hollarda to'liq sana - DD.MM.YYYY formatida
+    const day = orderDate.getDate().toString().padStart(2, '0');
+    const month = (orderDate.getMonth() + 1).toString().padStart(2, '0');
     const year = orderDate.getFullYear();
     const time = orderDate.toLocaleTimeString('uz-UZ', {
       hour: '2-digit',
       minute: '2-digit'
     });
 
-    return `${day} ${month} ${year}, ${time}`;
+    return `${day}.${month}.${year}, ${time}`;
   };
 
   const formatCurrency = (amount: number) => {

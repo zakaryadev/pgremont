@@ -7,6 +7,8 @@ const Index = () => {
   const handleCalculatorChange = (calculator: string) => {
     if (calculator === 'polygraphy') {
       navigate('/polygraphy');
+    } else if (calculator === 'other-services') {
+      navigate('/other-services');
     } else {
       navigate(`/${calculator}`);
     }

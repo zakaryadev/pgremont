@@ -1,0 +1,278 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Search, Save, ArrowLeft } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useCustomerOrders } from '@/hooks/useCustomerOrders';
+import { CustomerOrdersTable } from '@/components/calculator/CustomerOrdersTable';
+
+interface CustomerFormData {
+  customerName: string;
+  phoneNumber: string;
+  totalAmount: string;
+  paymentType: string;
+  advancePayment: string;
+  remainingBalance: string;
+}
+
+const OtherServicesPage = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { saveOrder } = useCustomerOrders();
+  const [formData, setFormData] = useState<CustomerFormData>({
+    customerName: '',
+    phoneNumber: '',
+    totalAmount: '',
+    paymentType: '',
+    advancePayment: '',
+    remainingBalance: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleInputChange = (field: keyof CustomerFormData, value: string) => {
+    const newFormData = {
+      ...formData,
+      [field]: value
+    };
+
+    // Auto-calculate remaining balance when advance payment or total amount changes
+    if (field === 'advancePayment' || field === 'totalAmount') {
+      const total = parseFloat(field === 'totalAmount' ? value : newFormData.totalAmount) || 0;
+      const advance = parseFloat(field === 'advancePayment' ? value : newFormData.advancePayment) || 0;
+      const remaining = total - advance;
+      
+      newFormData.remainingBalance = remaining >= 0 ? remaining.toFixed(0) : '0';
+    }
+
+    setFormData(newFormData);
+  };
+
+  const handleSave = async () => {
+    // Validation
+    if (!formData.customerName.trim()) {
+      toast({
+        title: "Xatolik",
+        description: "Mijoz nomini kiriting",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      toast({
+        title: "Xatolik", 
+        description: "Telefon raqamini kiriting",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.totalAmount.trim()) {
+      toast({
+        title: "Xatolik",
+        description: "Umumiy summani kiriting", 
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.paymentType.trim()) {
+      toast({
+        title: "Xatolik",
+        description: "To'lov turini tanlang",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Save to database
+      await saveOrder(
+        formData.customerName,
+        formData.phoneNumber,
+        parseFloat(formData.totalAmount),
+        formData.paymentType as 'cash' | 'click' | 'transfer',
+        parseFloat(formData.advancePayment) || 0,
+        parseFloat(formData.remainingBalance) || 0
+      );
+      
+      toast({
+        title: "Muvaffaqiyatli saqlandi",
+        description: `${formData.customerName} uchun ma'lumotlar saqlandi`,
+      });
+
+      // Reset form
+      setFormData({
+        customerName: '',
+        phoneNumber: '',
+        totalAmount: '',
+        paymentType: '',
+        advancePayment: '',
+        remainingBalance: ''
+      });
+
+    } catch (error) {
+      toast({
+        title: "Xatolik",
+        description: "Ma'lumotlarni saqlashda xatolik yuz berdi",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearch = () => {
+    // Search functionality is now handled in CustomerOrdersTable component
+    toast({
+      title: "Qidiruv",
+      description: "Qidiruv funksiyasi jadvalda mavjud",
+    });
+  };
+
+  const handleBack = () => {
+    navigate('/');
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBack}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Orqaga
+            </Button>
+            <h1 className="text-2xl font-bold">Boshqa xizmatlar</h1>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center">Mijoz ma'lumotlari va buyurtma boshqaruvi</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Customer Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Mijoz ma'lumotlari</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="customerName">MIJOZ NOMI</Label>
+                    <Input
+                      id="customerName"
+                      value={formData.customerName}
+                      onChange={(e) => handleInputChange('customerName', e.target.value)}
+                      placeholder="Mijoz ismini kiriting"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">TELEFON RAQAMI</Label>
+                    <Input
+                      id="phoneNumber"
+                      value={formData.phoneNumber}
+                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                      placeholder="+998 XX XXX XX XX"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Payment Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">To'lov ma'lumotlari</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="totalAmount">UMUMIY SUMMASI</Label>
+                    <Input
+                      id="totalAmount"
+                      type="number"
+                      value={formData.totalAmount}
+                      onChange={(e) => handleInputChange('totalAmount', e.target.value)}
+                      placeholder="Jami summa"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentType">TO'LOV TURI</Label>
+                    <Select value={formData.paymentType} onValueChange={(value) => handleInputChange('paymentType', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="To'lov turini tanlang" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">NAQD</SelectItem>
+                        <SelectItem value="click">CLICK</SelectItem>
+                        <SelectItem value="transfer">PERECHESLENIYA</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="advancePayment">AVANS</Label>
+                    <Input
+                      id="advancePayment"
+                      type="number"
+                      value={formData.advancePayment}
+                      onChange={(e) => handleInputChange('advancePayment', e.target.value)}
+                      placeholder="Avans summa"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="remainingBalance">QOLDIQ</Label>
+                    <Input
+                      id="remainingBalance"
+                      type="number"
+                      value={formData.remainingBalance}
+                      readOnly
+                      className="bg-muted"
+                      placeholder="Qolgan summa"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-4">
+                <Button
+                  onClick={handleSave}
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {isLoading ? 'Saqlanmoqda...' : 'SAVE'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Customer Orders Table */}
+          <div className="mt-8">
+            <CustomerOrdersTable />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default OtherServicesPage;
