@@ -214,7 +214,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
             // Wait 2 seconds to show the notification
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Delete related payment records (this will make advance_payment = 0 in the next refresh)
+            // Delete related payment records first
             const { error: deleteError } = await supabase
               .from('payment_records')
               .delete()
@@ -223,6 +223,9 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
             if (deleteError) {
               throw deleteError;
             }
+
+            // Payment records deleted, now refresh to update the display
+            // The order will show as fully paid with advance_payment = 0
 
             toast({
               title: "Buyurtma to'liq to'langan",
