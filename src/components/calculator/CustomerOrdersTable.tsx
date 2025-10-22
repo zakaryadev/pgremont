@@ -191,19 +191,17 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
     return () => clearInterval(interval);
   }, [autoRefreshEnabled, refreshOrders]);
 
-  // Auto delete fully paid orders - only for orders with payment history
+  // Auto delete fully paid orders
   useEffect(() => {
     const checkAndDeleteFullyPaid = async () => {
-      // Only check orders that have been paid through payment records (not new orders)
-      const ordersWithPaymentHistory = orders.filter(order => {
-        // Check if order has payment records by looking at advance payment
-        // New orders have advance_payment = 0, but they shouldn't be auto-deleted
-        // Only orders that were originally partially paid should be auto-deleted when fully paid
-        return order.remainingBalance <= 0 && order.advancePayment > 0;
+      // Check orders that are fully paid (remaining balance <= 0)
+      const fullyPaidOrders = orders.filter(order => {
+        // Orders are fully paid when remaining balance is 0 or negative
+        return order.remainingBalance <= 0;
       });
       
-      if (ordersWithPaymentHistory.length > 0) {
-        for (const order of ordersWithPaymentHistory) {
+      if (fullyPaidOrders.length > 0) {
+        for (const order of fullyPaidOrders) {
           try {
             // Show notification first
             toast({
@@ -215,21 +213,28 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Delete related payment records first
-            const { error: deleteError } = await supabase
+            const { error: deletePaymentError } = await supabase
               .from('payment_records')
               .delete()
               .eq('order_id', order.id);
 
-            if (deleteError) {
-              throw deleteError;
+            if (deletePaymentError) {
+              throw deletePaymentError;
             }
 
-            // Payment records deleted, now refresh to update the display
-            // The order will show as fully paid with advance_payment = 0
+            // Delete the order itself
+            const { error: deleteOrderError } = await supabase
+              .from('customer_orders')
+              .delete()
+              .eq('id', order.id);
+
+            if (deleteOrderError) {
+              throw deleteOrderError;
+            }
 
             toast({
-              title: "Buyurtma to'liq to'langan",
-              description: `${order.customerName} - Avans maydoni 0 ga tenglashtirildi`,
+              title: "Buyurtma o'chirildi",
+              description: `${order.customerName} - To'liq to'langan buyurtma muvaffaqiyatli o'chirildi`,
             });
 
           } catch (error) {

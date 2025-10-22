@@ -39,9 +39,11 @@ export function useCustomerOrders() {
       }
 
       const formattedOrders: CustomerOrder[] = (data || []).map((order: any) => {
-        // Calculate total paid from payment records
-        const totalPaid = order.payment_records?.reduce((sum: number, record: any) => 
-          sum + parseFloat(record.amount), 0) || parseFloat(order.advance_payment);
+        // Calculate total paid: original advance + payment records
+        const originalAdvance = parseFloat(order.advance_payment);
+        const additionalPayments = order.payment_records?.reduce((sum: number, record: any) => 
+          sum + parseFloat(record.amount), 0) || 0;
+        const totalPaid = originalAdvance + additionalPayments;
         
         // Calculate remaining balance
         const totalAmount = parseFloat(order.total_amount);

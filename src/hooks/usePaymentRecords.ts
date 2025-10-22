@@ -39,14 +39,30 @@ export function usePaymentRecords() {
         throw insertError;
       }
 
-      // Update the main order with new totals
-      const totalPaid = paymentRecords.reduce((sum, record) => sum + record.amount, 0);
+      // Don't update advance_payment - it should remain as the original advance
+      // Only update remaining_balance based on total payments
+      const newPaymentTotal = paymentRecords.reduce((sum, record) => sum + record.amount, 0);
+      
+      // Get the current order to calculate remaining balance properly
+      const { data: currentOrder, error: fetchError } = await supabase
+        .from('customer_orders')
+        .select('total_amount, advance_payment')
+        .eq('id', orderId)
+        .single();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      const totalAmount = parseFloat(currentOrder.total_amount);
+      const originalAdvance = parseFloat(currentOrder.advance_payment);
+      const totalPaid = originalAdvance + newPaymentTotal;
+      const remainingBalance = Math.max(0, totalAmount - totalPaid);
       
       const { error: updateError } = await supabase
         .from('customer_orders')
         .update({
-          advance_payment: totalPaid,
-          remaining_balance: 0 // Assuming full payment
+          remaining_balance: remainingBalance
         })
         .eq('id', orderId);
 

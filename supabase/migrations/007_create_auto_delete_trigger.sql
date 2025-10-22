@@ -4,14 +4,25 @@ RETURNS TRIGGER AS $$
 DECLARE
     total_paid DECIMAL(15,2);
     order_total DECIMAL(15,2);
+    order_exists BOOLEAN;
 BEGIN
+    -- Check if the order still exists (it might have been deleted already)
+    SELECT EXISTS(SELECT 1 FROM customer_orders WHERE id = NEW.order_id) INTO order_exists;
+    
+    IF NOT order_exists THEN
+        RETURN NEW;
+    END IF;
+    
     -- Get the order total amount
     SELECT total_amount INTO order_total
     FROM customer_orders
     WHERE id = NEW.order_id;
     
-    -- Calculate total paid amount from payment records
-    SELECT COALESCE(SUM(amount), 0) INTO total_paid
+    -- Calculate total paid amount: original advance + payment records
+    SELECT 
+        (SELECT advance_payment FROM customer_orders WHERE id = NEW.order_id) +
+        COALESCE(SUM(amount), 0)
+    INTO total_paid
     FROM payment_records
     WHERE order_id = NEW.order_id;
     
@@ -43,8 +54,11 @@ RETURNS TRIGGER AS $$
 DECLARE
     total_paid DECIMAL(15,2);
 BEGIN
-    -- Calculate total paid amount from payment records
-    SELECT COALESCE(SUM(amount), 0) INTO total_paid
+    -- Calculate total paid amount: original advance + payment records
+    SELECT 
+        NEW.advance_payment +
+        COALESCE(SUM(amount), 0)
+    INTO total_paid
     FROM payment_records
     WHERE order_id = NEW.id;
     
