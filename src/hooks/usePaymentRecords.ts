@@ -21,6 +21,20 @@ export function usePaymentRecords() {
       setLoading(true);
       setError(null);
       
+      // First, verify that the order exists
+      const { data: orderExists, error: orderCheckError } = await supabase
+        .from('customer_orders')
+        .select('id')
+        .eq('id', orderId);
+
+      if (orderCheckError) {
+        throw orderCheckError;
+      }
+
+      if (!orderExists || orderExists.length === 0) {
+        throw new Error(`Order with ID ${orderId} does not exist in the database`);
+      }
+      
       // Convert payment records to database format
       const recordsToInsert = paymentRecords.map(record => ({
         order_id: orderId,
@@ -32,7 +46,7 @@ export function usePaymentRecords() {
 
       const { data, error: insertError } = await supabase
         .from('payment_records')
-        .insert(recordsToInsert)
+        .insert(recordsToInsert as any)
         .select();
 
       if (insertError) {
@@ -44,26 +58,29 @@ export function usePaymentRecords() {
       const newPaymentTotal = paymentRecords.reduce((sum, record) => sum + record.amount, 0);
       
       // Get the current order to calculate remaining balance properly
-      const { data: currentOrder, error: fetchError } = await supabase
+      const { data: currentOrderData, error: fetchError } = await supabase
         .from('customer_orders')
         .select('total_amount, advance_payment')
-        .eq('id', orderId)
-        .single();
+        .eq('id', orderId);
 
       if (fetchError) {
         throw fetchError;
       }
 
-      const totalAmount = parseFloat(currentOrder.total_amount);
-      const originalAdvance = parseFloat(currentOrder.advance_payment);
+      if (!currentOrderData || currentOrderData.length === 0) {
+        throw new Error('Order not found');
+      }
+
+      const currentOrder = currentOrderData[0];
+
+      const totalAmount = parseFloat((currentOrder as any).total_amount);
+      const originalAdvance = parseFloat((currentOrder as any).advance_payment);
       const totalPaid = originalAdvance + newPaymentTotal;
       const remainingBalance = Math.max(0, totalAmount - totalPaid);
       
       const { error: updateError } = await supabase
         .from('customer_orders')
-        .update({
-          remaining_balance: remainingBalance
-        })
+        .update({ remaining_balance: remainingBalance } as any)
         .eq('id', orderId);
 
       if (updateError) {

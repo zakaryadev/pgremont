@@ -45,6 +45,18 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
     }
   }, [order, isOpen]);
 
+  // Refresh order data when modal opens to ensure we have the latest data
+  useEffect(() => {
+    if (order && isOpen) {
+      // Force a small delay to ensure the order data is fresh
+      const timeoutId = setTimeout(() => {
+        loadPaymentHistory();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isOpen]);
+
   const loadPaymentHistory = async () => {
     if (!order) return;
 
@@ -159,6 +171,16 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
   const handleSave = async () => {
     if (!order) return;
 
+    // Validate order ID
+    if (!order.id || order.id.trim() === '') {
+      toast({
+        title: "Xatolik",
+        description: "Buyurtma ma'lumotlari noto'g'ri. Sahifani yangilang va qayta urining.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       
@@ -188,9 +210,23 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
       });
       onClose();
     } catch (error) {
+      console.error('Failed to save payment records:', error);
+      
+      let errorMessage = "To'lov qaydnomasini saqlashda xatolik yuz berdi";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('does not exist')) {
+          errorMessage = "Buyurtma topilmadi. Sahifani yangilang va qayta urining.";
+        } else if (error.message.includes('foreign key constraint')) {
+          errorMessage = "Buyurtma ma'lumotlari noto'g'ri. Sahifani yangilang va qayta urining.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Xatolik",
-        description: "To'lov qaydnomasini saqlashda xatolik yuz berdi",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

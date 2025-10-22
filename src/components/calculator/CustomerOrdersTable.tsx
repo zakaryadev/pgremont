@@ -47,18 +47,29 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
   const [paymentOrder, setPaymentOrder] = useState<CustomerOrder | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+  const [showFullyPaid, setShowFullyPaid] = useState(false);
 
-  // Filter orders based on search query
+  // Filter orders based on search query and fully paid status
   const filteredOrders = useMemo(() => {
-    if (!searchQuery.trim()) return orders;
+    let filtered = orders;
     
-    const query = searchQuery.toLowerCase();
-    return orders.filter(order => 
-      order.customerName.toLowerCase().includes(query) ||
-      order.phoneNumber?.toLowerCase().includes(query) ||
-      order.paymentType.toLowerCase().includes(query)
-    );
-  }, [orders, searchQuery]);
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(order => 
+        order.customerName.toLowerCase().includes(query) ||
+        order.phoneNumber?.toLowerCase().includes(query) ||
+        order.paymentType.toLowerCase().includes(query)
+      );
+    }
+    
+    // Filter by fully paid status
+    if (!showFullyPaid) {
+      filtered = filtered.filter(order => order.remainingBalance > 0);
+    }
+    
+    return filtered;
+  }, [orders, searchQuery, showFullyPaid]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('uz-UZ').format(amount) + ' so\'m';
@@ -191,74 +202,8 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
     return () => clearInterval(interval);
   }, [autoRefreshEnabled, refreshOrders]);
 
-  // Auto delete fully paid orders
-  useEffect(() => {
-    const checkAndDeleteFullyPaid = async () => {
-      // Check orders that are fully paid (remaining balance <= 0)
-      const fullyPaidOrders = orders.filter(order => {
-        // Orders are fully paid when remaining balance is 0 or negative
-        return order.remainingBalance <= 0;
-      });
-      
-      if (fullyPaidOrders.length > 0) {
-        for (const order of fullyPaidOrders) {
-          try {
-            // Show notification first
-            toast({
-              title: "To'liq to'langan buyurtma",
-              description: `${order.customerName} - Buyurtma to'liq to'langan, o'chirilmoqda...`,
-            });
-
-            // Wait 2 seconds to show the notification
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            // Delete related payment records first
-            const { error: deletePaymentError } = await supabase
-              .from('payment_records')
-              .delete()
-              .eq('order_id', order.id);
-
-            if (deletePaymentError) {
-              throw deletePaymentError;
-            }
-
-            // Delete the order itself
-            const { error: deleteOrderError } = await supabase
-              .from('customer_orders')
-              .delete()
-              .eq('id', order.id);
-
-            if (deleteOrderError) {
-              throw deleteOrderError;
-            }
-
-            toast({
-              title: "Buyurtma o'chirildi",
-              description: `${order.customerName} - To'liq to'langan buyurtma muvaffaqiyatli o'chirildi`,
-            });
-
-          } catch (error) {
-            console.error('Failed to delete fully paid order:', error);
-            toast({
-              title: "Xatolik",
-              description: `${order.customerName} buyurtmasini o'chirishda xatolik yuz berdi`,
-              variant: "destructive"
-            });
-          }
-        }
-        
-        // Refresh orders after all deletions
-        setTimeout(() => {
-          refreshOrders();
-        }, 1000);
-      }
-    };
-
-    // Run check every 5 seconds
-    const interval = setInterval(checkAndDeleteFullyPaid, 5000);
-    
-    return () => clearInterval(interval);
-  }, [orders, refreshOrders, toast]);
+  // Hide fully paid orders instead of deleting them
+  // This preserves payment history while keeping the interface clean
 
   return (
     <div className="space-y-4">
@@ -273,6 +218,11 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                 {filteredOrders.length !== orders.length && (
                   <span className="ml-2 text-primary">
                     (Ko'rsatilmoqda: {filteredOrders.length} ta)
+                  </span>
+                )}
+                {!showFullyPaid && (
+                  <span className="ml-2 text-blue-600">
+                    (To'liq to'langanlar yashirilgan)
                   </span>
                 )}
                 {autoRefreshEnabled && (
@@ -306,6 +256,17 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
               </div>
               
               <div className="flex items-center gap-2">
+                <Button
+                  variant={showFullyPaid ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowFullyPaid(!showFullyPaid)}
+                  className="flex items-center gap-2"
+                  title={showFullyPaid ? "To'liq to'langan buyurtmalarni yashirish" : "To'liq to'langan buyurtmalarni ko'rsatish"}
+                >
+                  <Eye className="h-4 w-4" />
+                  {showFullyPaid ? "Yashirish" : "Ko'rsatish"}
+                </Button>
+                
                 <Button
                   variant="outline"
                   size="sm"

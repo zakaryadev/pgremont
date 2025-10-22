@@ -384,7 +384,7 @@ function ResultsComponent({ results, items, materialPrice, materials, isTablet =
               <span className="text-destructive font-medium">{materialName} chiqindisi:</span>
               <div className="text-right">
                 <span className="font-semibold text-destructive">
-                  {formatArea(data.waste)} - {formatCurrency(data.wasteCost)}
+                  {formatArea(results.totalMaterialUsed - results.totalPrintArea)} - {formatCurrency(results.wasteCost)}
                 </span>
               </div>
             </div>
