@@ -20,13 +20,16 @@ export interface PaymentAnalytics {
     date: string;
     totalAmount: number;
     orderCount: number;
+    cashAmount: number;
+    clickAmount: number;
+    transferAmount: number;
   }>;
 }
 
 export interface AnalyticsFilters {
   startDate: string;
   endDate: string;
-  paymentMethod?: "cash" | "click" | "transfer";
+  // Removed paymentMethod filter as we now show all payment methods
 }
 
 export function usePaymentAnalytics() {
@@ -59,19 +62,17 @@ export function usePaymentAnalytics() {
     payment_type,
     created_at,
     payment_records (
+      id,
       amount,
       payment_method,
-      payment_date
+      payment_date,
+      payment_type
     )
   `
         )
         .gte("created_at", start.toISOString())
-        .lte("created_at", end.toISOString());
-
-      // Add payment method filter if specified
-      if (paymentMethod) {
-        query = query.eq("payment_type", paymentMethod);
-      }
+        .lte("created_at", end.toISOString())
+        .order('created_at', { ascending: false });
 
       const { data: orders, error: ordersError } = await query;
 
@@ -123,6 +124,9 @@ export function usePaymentAnalytics() {
         {
           totalAmount: number;
           orderCount: number;
+          cashAmount: number;
+          clickAmount: number;
+          transferAmount: number;
         }
       >();
 
@@ -136,51 +140,140 @@ export function usePaymentAnalytics() {
         const orderAmount = parseFloat(order.total_amount);
         analyticsData.totalRevenue += orderAmount;
 
-        // Count by payment method
-        const paymentMethod = order.payment_type;
-        if (paymentMethod === "cash") {
-          analyticsData.paymentMethodStats.cash.amount += orderAmount;
-          analyticsData.paymentMethodStats.cash.count += 1;
-        } else if (paymentMethod === "click") {
-          analyticsData.paymentMethodStats.click.amount += orderAmount;
-          analyticsData.paymentMethodStats.click.count += 1;
-        } else if (paymentMethod === "transfer") {
-          analyticsData.paymentMethodStats.transfer.amount += orderAmount;
-          analyticsData.paymentMethodStats.transfer.count += 1;
-        }
+        // Track payment methods from payment records
+        const paymentRecords = order.payment_records || [];
+        const hasPaymentRecords = paymentRecords.length > 0;
 
-        // Monthly stats
-        if (!monthlyMap.has(monthKey)) {
-          monthlyMap.set(monthKey, {
-            totalAmount: 0,
-            orderCount: 0,
-            cashAmount: 0,
-            clickAmount: 0,
-            transferAmount: 0,
+        // If there are payment records, use them to track payment methods
+        if (hasPaymentRecords) {
+          paymentRecords.forEach((record: any) => {
+            const amount = parseFloat(record.amount);
+            const paymentMethod = record.payment_method || order.payment_type;
+            
+            // Update payment method stats
+            if (paymentMethod === "cash") {
+              analyticsData.paymentMethodStats.cash.amount += amount;
+              analyticsData.paymentMethodStats.cash.count += 1;
+            } else if (paymentMethod === "click") {
+              analyticsData.paymentMethodStats.click.amount += amount;
+              analyticsData.paymentMethodStats.click.count += 1;
+            } else if (paymentMethod === "transfer") {
+              analyticsData.paymentMethodStats.transfer.amount += amount;
+              analyticsData.paymentMethodStats.transfer.count += 1;
+            }
+
+            // Initialize month data if not exists
+            if (!monthlyMap.has(monthKey)) {
+              monthlyMap.set(monthKey, {
+                totalAmount: 0,
+                orderCount: 0,
+                cashAmount: 0,
+                clickAmount: 0,
+                transferAmount: 0,
+              });
+            }
+            const monthData = monthlyMap.get(monthKey)!;
+            
+            // Update month data
+            monthData.totalAmount += amount;
+            if (record.payment_type === 'advance') {
+              monthData.orderCount += 1; // Only count order once for advance payment
+            }
+
+            if (paymentMethod === "cash") {
+              monthData.cashAmount += amount;
+            } else if (paymentMethod === "click") {
+              monthData.clickAmount += amount;
+            } else if (paymentMethod === "transfer") {
+              monthData.transferAmount += amount;
+            }
+
+            // Initialize day data if not exists
+            if (!dailyMap.has(dayKey)) {
+              dailyMap.set(dayKey, {
+                totalAmount: 0,
+                orderCount: 0,
+                cashAmount: 0,
+                clickAmount: 0,
+                transferAmount: 0,
+              });
+            }
+            const dayData = dailyMap.get(dayKey)!;
+            
+            // Update day data
+            dayData.totalAmount += amount;
+            if (record.payment_type === 'advance') {
+              dayData.orderCount += 1; // Only count order once for advance payment
+            }
+
+            if (paymentMethod === 'cash') {
+              dayData.cashAmount += amount;
+            } else if (paymentMethod === 'click') {
+              dayData.clickAmount += amount;
+            } else if (paymentMethod === 'transfer') {
+              dayData.transferAmount += amount;
+            }
           });
-        }
-        const monthData = monthlyMap.get(monthKey)!;
-        monthData.totalAmount += orderAmount;
-        monthData.orderCount += 1;
+        } else {
+          // Fallback to using order's payment type if no payment records exist
+          const paymentMethod = order.payment_type;
+          
+          // Update payment method stats
+          if (paymentMethod === "cash") {
+            analyticsData.paymentMethodStats.cash.amount += orderAmount;
+            analyticsData.paymentMethodStats.cash.count += 1;
+          } else if (paymentMethod === "click") {
+            analyticsData.paymentMethodStats.click.amount += orderAmount;
+            analyticsData.paymentMethodStats.click.count += 1;
+          } else if (paymentMethod === "transfer") {
+            analyticsData.paymentMethodStats.transfer.amount += orderAmount;
+            analyticsData.paymentMethodStats.transfer.count += 1;
+          }
 
-        if (paymentMethod === "cash") {
-          monthData.cashAmount += orderAmount;
-        } else if (paymentMethod === "click") {
-          monthData.clickAmount += orderAmount;
-        } else if (paymentMethod === "transfer") {
-          monthData.transferAmount += orderAmount;
-        }
+          // Monthly stats
+          if (!monthlyMap.has(monthKey)) {
+            monthlyMap.set(monthKey, {
+              totalAmount: 0,
+              orderCount: 0,
+              cashAmount: 0,
+              clickAmount: 0,
+              transferAmount: 0,
+            });
+          }
+          const monthData = monthlyMap.get(monthKey)!;
+          monthData.totalAmount += orderAmount;
+          monthData.orderCount += 1;
 
-        // Daily stats
-        if (!dailyMap.has(dayKey)) {
-          dailyMap.set(dayKey, {
-            totalAmount: 0,
-            orderCount: 0,
-          });
+          if (paymentMethod === "cash") {
+            monthData.cashAmount += orderAmount;
+          } else if (paymentMethod === "click") {
+            monthData.clickAmount += orderAmount;
+          } else if (paymentMethod === "transfer") {
+            monthData.transferAmount += orderAmount;
+          }
+
+          // Daily stats
+          if (!dailyMap.has(dayKey)) {
+            dailyMap.set(dayKey, {
+              totalAmount: 0,
+              orderCount: 0,
+              cashAmount: 0,
+              clickAmount: 0,
+              transferAmount: 0,
+            });
+          }
+          const dayData = dailyMap.get(dayKey)!;
+          dayData.totalAmount += orderAmount;
+          dayData.orderCount += 1;
+          
+          if (paymentMethod === 'cash') {
+            dayData.cashAmount += orderAmount;
+          } else if (paymentMethod === 'click') {
+            dayData.clickAmount += orderAmount;
+          } else if (paymentMethod === 'transfer') {
+            dayData.transferAmount += orderAmount;
+          }
         }
-        const dayData = dailyMap.get(dayKey)!;
-        dayData.totalAmount += orderAmount;
-        dayData.orderCount += 1;
       });
 
       // Convert maps to arrays

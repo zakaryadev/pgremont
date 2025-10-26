@@ -174,9 +174,12 @@ const AnalyticsPage = () => {
                         <thead>
                           <tr className="border-b">
                             <th className="text-left p-3">Sana</th>
-                            <th className="text-right p-3">Jami Daromad</th>
-                            <th className="text-right p-3">Buyurtmalar soni</th>
-                            <th className="text-right p-3">O'rtacha buyurtma</th>
+                            <th className="text-right p-3">Jami</th>
+                            <th className="text-right p-3 text-green-700">Naqd</th>
+                            <th className="text-right p-3 text-blue-700">Click</th>
+                            <th className="text-right p-3 text-purple-700">Perech.</th>
+                            <th className="text-right p-3">Buyurtma</th>
+                            <th className="text-right p-3">O'rtacha</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -185,8 +188,17 @@ const AnalyticsPage = () => {
                               <td className="p-3 font-medium">
                                 {formatDate(stat.date)}
                               </td>
-                              <td className="p-3 text-right font-semibold text-green-600">
+                              <td className="p-3 text-right font-semibold">
                                 {formatCurrency(stat.totalAmount)}
+                              </td>
+                              <td className="p-3 text-right text-green-700">
+                                {formatCurrency(stat.cashAmount)}
+                              </td>
+                              <td className="p-3 text-right text-blue-700">
+                                {formatCurrency(stat.clickAmount)}
+                              </td>
+                              <td className="p-3 text-right text-purple-700">
+                                {formatCurrency(stat.transferAmount)}
                               </td>
                               <td className="p-3 text-right">
                                 {stat.orderCount}
