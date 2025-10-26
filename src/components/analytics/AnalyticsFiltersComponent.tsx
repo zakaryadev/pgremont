@@ -26,6 +26,7 @@ export function AnalyticsFiltersComponent({
   onRefresh,
   loading,
 }: AnalyticsFiltersProps) {
+  // Sana o'zgarishi
   const handleDateChange = (field: "startDate" | "endDate", value: string) => {
     onFiltersChange({
       ...filters,
@@ -33,6 +34,7 @@ export function AnalyticsFiltersComponent({
     });
   };
 
+  // To'lov turi o'zgarishi
   const handlePaymentMethodChange = (value: string) => {
     onFiltersChange({
       ...filters,
@@ -41,51 +43,51 @@ export function AnalyticsFiltersComponent({
     });
   };
 
+  // Ertangi sana (string formatda)
+  const getTomorrowDateString = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  };
+
+  // Tezkor sanalarni o'rnatish
   const setQuickDateRange = (
     range: "today" | "week" | "month" | "quarter" | "year"
   ) => {
     const today = new Date();
-    let startDate: Date;
-    let endDate = new Date(today);
+    let startDate = new Date();
 
-    switch (
-      range // Fix: Ensure startDate is correctly set for each range
-    ) {
-      // For all cases, endDate should be today + 1 day to include today's full data
+    switch (range) {
       case "today":
         startDate = new Date(today);
         break;
       case "week":
-        startDate = new Date(today);
         startDate.setDate(today.getDate() - 7);
         break;
       case "month":
-        startDate = new Date(today);
         startDate.setMonth(today.getMonth() - 1);
         break;
       case "quarter":
-        startDate = new Date(today);
         startDate.setMonth(today.getMonth() - 3);
         break;
       case "year":
-        startDate = new Date(today);
         startDate.setFullYear(today.getFullYear() - 1);
         break;
-      default:
-        startDate = new Date(today);
     }
-    endDate.setDate(endDate.getDate() + 1); // Add one day to endDate to include the full day
+
+    const endDate = new Date(today); // Bugungi sana oxirgi kun sifatida
 
     onFiltersChange({
       ...filters,
       startDate: startDate.toISOString().split("T")[0],
-      // Fix: Ensure endDate is inclusive by setting it to the end of the day
-      endDate: new Date(
-        endDate.getFullYear(),
-        endDate.getMonth(),
-        endDate.getDate()
-      ).toISOString(),
+      endDate: endDate.toISOString().split("T")[0],
     });
+  };
+
+  // Sana formatlash yordamchisi
+  const formatDate = (date: string | Date | undefined) => {
+    if (!date) return "";
+    return typeof date === "string" ? date : date.toISOString().split("T")[0];
   };
 
   return (
@@ -96,9 +98,10 @@ export function AnalyticsFiltersComponent({
           Analiz Filtrlari
         </CardTitle>
       </CardHeader>
+
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Start Date */}
+          {/* Boshlanish sanasi */}
           <div className="space-y-2">
             <Label htmlFor="startDate">Boshlanish sanasi</Label>
             <div className="relative">
@@ -106,14 +109,14 @@ export function AnalyticsFiltersComponent({
               <Input
                 id="startDate"
                 type="date"
-                value={filters.startDate}
+                value={formatDate(filters.startDate)}
                 onChange={(e) => handleDateChange("startDate", e.target.value)}
                 className="pl-10"
               />
             </div>
           </div>
 
-          {/* End Date */}
+          {/* Tugash sanasi */}
           <div className="space-y-2">
             <Label htmlFor="endDate">Tugash sanasi</Label>
             <div className="relative">
@@ -121,14 +124,14 @@ export function AnalyticsFiltersComponent({
               <Input
                 id="endDate"
                 type="date"
-                value={filters.endDate}
+                value={formatDate(filters.endDate)}
                 onChange={(e) => handleDateChange("endDate", e.target.value)}
                 className="pl-10"
               />
             </div>
           </div>
 
-          {/* Payment Method */}
+          {/* To'lov turi */}
           <div className="space-y-2">
             <Label htmlFor="paymentMethod">To'lov usuli</Label>
             <Select
@@ -142,12 +145,12 @@ export function AnalyticsFiltersComponent({
                 <SelectItem value="all">Barcha usullar</SelectItem>
                 <SelectItem value="cash">NAQD</SelectItem>
                 <SelectItem value="click">CLICK</SelectItem>
-                <SelectItem value="transfer">PERECHESLENIYA</SelectItem>
+                <SelectItem value="transfer">PERECHISLENIYA</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Actions */}
+          {/* Yangilash tugmasi */}
           <div className="space-y-2">
             <Label>Amallar</Label>
             <div className="flex gap-2">
@@ -166,58 +169,42 @@ export function AnalyticsFiltersComponent({
           </div>
         </div>
 
-        {/* Quick Date Range Buttons */}
+        {/* Tezkor sanalar */}
         <div className="mt-4">
           <Label className="text-sm font-medium mb-2 block">
             Tezkor sana tanlash
           </Label>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setQuickDateRange("today")}
-            >
-              Bugun
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setQuickDateRange("week")}
-            >
-              Oxirgi 7 kun
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setQuickDateRange("month")}
-            >
-              Oxirgi oy
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setQuickDateRange("quarter")}
-            >
-              Oxirgi 3 oy
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setQuickDateRange("year")}
-            >
-              Oxirgi yil
-            </Button>
+            {[
+              { label: "Bugun", value: "today" },
+              { label: "Oxirgi 7 kun", value: "week" },
+              { label: "Oxirgi oy", value: "month" },
+              { label: "Oxirgi 3 oy", value: "quarter" },
+              { label: "Oxirgi yil", value: "year" },
+            ].map((btn) => (
+              <Button
+                key={btn.value}
+                variant="outline"
+                size="sm"
+                onClick={() => setQuickDateRange(btn.value as any)}
+              >
+                {btn.label}
+              </Button>
+            ))}
           </div>
         </div>
 
-        {/* Current Filter Summary */}
+        {/* Hozirgi filtrlar */}
         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <div className="text-sm text-gray-600">
             <strong>Joriy filtrlar:</strong>
             <br />
-            Sana: {new Date(filters.startDate).toLocaleDateString(
-              "uz-UZ"
-            )} - {new Date(filters.endDate).toLocaleDateString("uz-UZ")}
+            Sana:{" "}
+            {filters.startDate && filters.endDate
+              ? `${new Date(filters.startDate).toLocaleDateString(
+                  "uz-UZ"
+                )} - ${new Date(filters.endDate).toLocaleDateString("uz-UZ")}`
+              : "Tanlanmagan"}
             <br />
             To'lov usuli:{" "}
             {filters.paymentMethod
@@ -225,7 +212,7 @@ export function AnalyticsFiltersComponent({
                 ? "NAQD"
                 : filters.paymentMethod === "click"
                 ? "CLICK"
-                : "PERECHESLENIYA"
+                : "PERECHISLENIYA"
               : "Barcha usullar"}
           </div>
         </div>

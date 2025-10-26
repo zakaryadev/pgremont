@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '../integrations/supabase/client';
+import { useState, useCallback, useEffect } from "react";
+import { supabase } from "../integrations/supabase/client";
 
 export interface PaymentAnalytics {
   totalRevenue: number;
@@ -26,7 +26,7 @@ export interface PaymentAnalytics {
 export interface AnalyticsFilters {
   startDate: string;
   endDate: string;
-  paymentMethod?: 'cash' | 'click' | 'transfer';
+  paymentMethod?: "cash" | "click" | "transfer";
 }
 
 export function usePaymentAnalytics() {
@@ -42,27 +42,35 @@ export function usePaymentAnalytics() {
       const { startDate, endDate, paymentMethod } = filters;
 
       // Build the base query
+      // startDate va endDate string bo‘lsa (masalan "2025-10-26")
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      // end sanasini kun oxirigacha kengaytiramiz, shunda o‘sha kun ham kiradi
+      end.setHours(23, 59, 59, 999);
+
       let query = supabase
-        .from('customer_orders')
-        .select(`
-          id,
-          total_amount,
-          advance_payment,
-          payment_type,
-          created_at,
-          payment_records (
-            amount,
-            payment_method,
-            payment_date
-          )
-        `)
-        .gte('created_at', startDate)
-        .lte('created_at', endDate);
-        
+        .from("customer_orders")
+        .select(
+          `
+    id,
+    total_amount,
+    advance_payment,
+    payment_type,
+    created_at,
+    payment_records (
+      amount,
+      payment_method,
+      payment_date
+    )
+  `
+        )
+        .gte("created_at", start.toISOString())
+        .lte("created_at", end.toISOString());
 
       // Add payment method filter if specified
       if (paymentMethod) {
-        query = query.eq('payment_type', paymentMethod);
+        query = query.eq("payment_type", paymentMethod);
       }
 
       const { data: orders, error: ordersError } = await query;
@@ -77,10 +85,10 @@ export function usePaymentAnalytics() {
           paymentMethodStats: {
             cash: { amount: 0, count: 0 },
             click: { amount: 0, count: 0 },
-            transfer: { amount: 0, count: 0 }
+            transfer: { amount: 0, count: 0 },
           },
           monthlyStats: [],
-          dailyStats: []
+          dailyStats: [],
         });
         return;
       }
@@ -91,44 +99,52 @@ export function usePaymentAnalytics() {
         paymentMethodStats: {
           cash: { amount: 0, count: 0 },
           click: { amount: 0, count: 0 },
-          transfer: { amount: 0, count: 0 }
+          transfer: { amount: 0, count: 0 },
         },
         monthlyStats: [],
-        dailyStats: []
+        dailyStats: [],
       };
 
       // Group by month for monthly stats
-      const monthlyMap = new Map<string, {
-        totalAmount: number;
-        orderCount: number;
-        cashAmount: number;
-        clickAmount: number;
-        transferAmount: number;
-      }>();
+      const monthlyMap = new Map<
+        string,
+        {
+          totalAmount: number;
+          orderCount: number;
+          cashAmount: number;
+          clickAmount: number;
+          transferAmount: number;
+        }
+      >();
 
       // Group by day for daily stats
-      const dailyMap = new Map<string, {
-        totalAmount: number;
-        orderCount: number;
-      }>();
+      const dailyMap = new Map<
+        string,
+        {
+          totalAmount: number;
+          orderCount: number;
+        }
+      >();
 
       orders.forEach((order: any) => {
         const orderDate = new Date(order.created_at);
-        const monthKey = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}`;
-        const dayKey = orderDate.toISOString().split('T')[0];
+        const monthKey = `${orderDate.getFullYear()}-${String(
+          orderDate.getMonth() + 1
+        ).padStart(2, "0")}`;
+        const dayKey = orderDate.toISOString().split("T")[0];
 
         const orderAmount = parseFloat(order.total_amount);
         analyticsData.totalRevenue += orderAmount;
 
         // Count by payment method
         const paymentMethod = order.payment_type;
-        if (paymentMethod === 'cash') {
+        if (paymentMethod === "cash") {
           analyticsData.paymentMethodStats.cash.amount += orderAmount;
           analyticsData.paymentMethodStats.cash.count += 1;
-        } else if (paymentMethod === 'click') {
+        } else if (paymentMethod === "click") {
           analyticsData.paymentMethodStats.click.amount += orderAmount;
           analyticsData.paymentMethodStats.click.count += 1;
-        } else if (paymentMethod === 'transfer') {
+        } else if (paymentMethod === "transfer") {
           analyticsData.paymentMethodStats.transfer.amount += orderAmount;
           analyticsData.paymentMethodStats.transfer.count += 1;
         }
@@ -140,18 +156,18 @@ export function usePaymentAnalytics() {
             orderCount: 0,
             cashAmount: 0,
             clickAmount: 0,
-            transferAmount: 0
+            transferAmount: 0,
           });
         }
         const monthData = monthlyMap.get(monthKey)!;
         monthData.totalAmount += orderAmount;
         monthData.orderCount += 1;
 
-        if (paymentMethod === 'cash') {
+        if (paymentMethod === "cash") {
           monthData.cashAmount += orderAmount;
-        } else if (paymentMethod === 'click') {
+        } else if (paymentMethod === "click") {
           monthData.clickAmount += orderAmount;
-        } else if (paymentMethod === 'transfer') {
+        } else if (paymentMethod === "transfer") {
           monthData.transferAmount += orderAmount;
         }
 
@@ -159,7 +175,7 @@ export function usePaymentAnalytics() {
         if (!dailyMap.has(dayKey)) {
           dailyMap.set(dayKey, {
             totalAmount: 0,
-            orderCount: 0
+            orderCount: 0,
           });
         }
         const dayData = dailyMap.get(dayKey)!;
@@ -171,21 +187,23 @@ export function usePaymentAnalytics() {
       analyticsData.monthlyStats = Array.from(monthlyMap.entries())
         .map(([month, data]) => ({
           month,
-          ...data
+          ...data,
         }))
         .sort((a, b) => a.month.localeCompare(b.month));
 
       analyticsData.dailyStats = Array.from(dailyMap.entries())
         .map(([date, data]) => ({
           date,
-          ...data
+          ...data,
         }))
         .sort((a, b) => a.date.localeCompare(b.date));
 
       setAnalytics(analyticsData);
     } catch (err) {
-      console.error('Failed to fetch analytics:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch analytics');
+      console.error("Failed to fetch analytics:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch analytics"
+      );
     } finally {
       setLoading(false);
     }
@@ -195,6 +213,6 @@ export function usePaymentAnalytics() {
     analytics,
     loading,
     error,
-    fetchAnalytics
+    fetchAnalytics,
   };
 }

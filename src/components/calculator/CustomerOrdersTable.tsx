@@ -1,22 +1,36 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Search, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  Loader2, 
-  AlertCircle, 
-  Phone, 
+import React, { useState, useMemo, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  Loader2,
+  AlertCircle,
+  Phone,
   Calendar,
   DollarSign,
   CreditCard,
@@ -24,24 +38,27 @@ import {
   X,
   RefreshCw,
   Pause,
-  Play
-} from 'lucide-react';
-import { CustomerOrder, useCustomerOrders } from '@/hooks/useCustomerOrders';
-import { useToast } from '@/hooks/use-toast';
-import { EditCustomerOrderModal } from './EditCustomerOrderModal';
-import { PaymentRecordModal } from './PaymentRecordModal';
-import { supabase } from '@/integrations/supabase/client';
+  Play,
+} from "lucide-react";
+import { CustomerOrder, useCustomerOrders } from "@/hooks/useCustomerOrders";
+import { useToast } from "@/hooks/use-toast";
+import { EditCustomerOrderModal } from "./EditCustomerOrderModal";
+import { PaymentRecordModal } from "./PaymentRecordModal";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CustomerOrdersTableProps {
   onEditOrder?: (order: CustomerOrder) => void;
 }
 
 export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
-  const { orders, loading, error, deleteOrder, updateOrder, refreshOrders } = useCustomerOrders();
+  const { orders, loading, error, deleteOrder, updateOrder, refreshOrders } =
+    useCustomerOrders();
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(
+    null
+  );
   const [editingOrder, setEditingOrder] = useState<CustomerOrder | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [paymentOrder, setPaymentOrder] = useState<CustomerOrder | null>(null);
@@ -52,55 +69,64 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
   // Filter orders based on search query and fully paid status
   const filteredOrders = useMemo(() => {
     let filtered = orders;
-    
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(order => 
-        order.customerName.toLowerCase().includes(query) ||
-        order.phoneNumber?.toLowerCase().includes(query) ||
-        order.paymentType.toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (order) =>
+          order.customerName.toLowerCase().includes(query) ||
+          order.phoneNumber?.toLowerCase().includes(query) ||
+          order.paymentType.toLowerCase().includes(query)
       );
     }
-    
+
     // Filter by fully paid status
     if (!showFullyPaid) {
-      filtered = filtered.filter(order => order.remainingBalance > 0);
+      filtered = filtered.filter((order) => order.remainingBalance > 0);
     }
-    
+
     return filtered;
   }, [orders, searchQuery, showFullyPaid]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('uz-UZ').format(amount) + ' so\'m';
+    return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
   };
 
   const formatDate = (date: Date) => {
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();
-    const time = date.toLocaleTimeString('uz-UZ', {
-      hour: '2-digit',
-      minute: '2-digit'
+    const time = date.toLocaleTimeString("uz-UZ", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
     return `${day}.${month}.${year}, ${time}`;
   };
 
   const getPaymentTypeLabel = (type: string) => {
     switch (type) {
-      case 'cash': return 'NAQD';
-      case 'click': return 'CLICK';
-      case 'transfer': return 'PERECHESLENIYA';
-      default: return type;
+      case "cash":
+        return "NAQD";
+      case "click":
+        return "CLICK";
+      case "transfer":
+        return "PERECHESLENIYA";
+      default:
+        return type;
     }
   };
 
   const getPaymentTypeColor = (type: string) => {
     switch (type) {
-      case 'cash': return 'bg-green-100 text-green-800';
-      case 'click': return 'bg-blue-100 text-blue-800';
-      case 'transfer': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "cash":
+        return "bg-green-100 text-green-800";
+      case "click":
+        return "bg-blue-100 text-blue-800";
+      case "transfer":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -108,8 +134,8 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
     e.stopPropagation();
 
     const confirmed = window.confirm(
-      'Bu mijoz buyurtmasini o\'chirishni xohlaysizmi?\n\n' +
-      'Bu amalni bekor qilib bo\'lmaydi!'
+      "Bu mijoz buyurtmasini o'chirishni xohlaysizmi?\n\n" +
+        "Bu amalni bekor qilib bo'lmaydi!"
     );
 
     if (!confirmed) return;
@@ -125,7 +151,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
       toast({
         title: "Xatolik",
         description: "Buyurtmani o'chirishda xatolik yuz berdi",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setDeletingId(null);
@@ -153,7 +179,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
       toast({
         title: "Xatolik",
         description: "Ma'lumotlarni yangilashda xatolik yuz berdi",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -169,7 +195,10 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
     setIsPaymentModalOpen(true);
   };
 
-  const handleSavePaymentRecord = async (orderId: string, paymentRecords: any[]) => {
+  const handleSavePaymentRecord = async (
+    orderId: string,
+    paymentRecords: any[]
+  ) => {
     try {
       // Payment records are already saved in the modal
       // Just refresh the orders to show updated data
@@ -182,13 +211,13 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
       toast({
         title: "Xatolik",
         description: "Ma'lumotlarni yangilashda xatolik yuz berdi",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   const clearSearch = () => {
-    setSearchQuery('');
+    setSearchQuery("");
   };
 
   // Auto refresh every 3 seconds
@@ -212,7 +241,9 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <CardTitle className="text-lg">Saqlangan mijoz buyurtmalari</CardTitle>
+              <CardTitle className="text-lg">
+                Saqlangan mijoz buyurtmalari
+              </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Jami: {orders.length} ta buyurtma
                 {filteredOrders.length !== orders.length && (
@@ -233,7 +264,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                 )}
               </p>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -254,19 +285,23 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                   </Button>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Button
                   variant={showFullyPaid ? "default" : "outline"}
                   size="sm"
                   onClick={() => setShowFullyPaid(!showFullyPaid)}
                   className="flex items-center gap-2"
-                  title={showFullyPaid ? "To'liq to'langan buyurtmalarni yashirish" : "To'liq to'langan buyurtmalarni ko'rsatish"}
+                  title={
+                    showFullyPaid
+                      ? "To'liq to'langan buyurtmalarni yashirish"
+                      : "To'liq to'langan buyurtmalarni ko'rsatish"
+                  }
                 >
                   <Eye className="h-4 w-4" />
                   {showFullyPaid ? "Yashirish" : "Ko'rsatish"}
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -276,13 +311,17 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                   <RefreshCw className="h-4 w-4" />
                   Yangilash
                 </Button>
-                
+
                 <Button
                   variant={autoRefreshEnabled ? "default" : "outline"}
                   size="sm"
                   onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
                   className="flex items-center gap-2"
-                  title={autoRefreshEnabled ? "Avtomatik yangilashni to'xtatish" : "Avtomatik yangilashni yoqish"}
+                  title={
+                    autoRefreshEnabled
+                      ? "Avtomatik yangilashni to'xtatish"
+                      : "Avtomatik yangilashni yoqish"
+                  }
                 >
                   {autoRefreshEnabled ? (
                     <Pause className="h-4 w-4" />
@@ -350,7 +389,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                     <TableHead>Telefon</TableHead>
                     <TableHead>Jami summa</TableHead>
                     <TableHead>To'lov turi</TableHead>
-                    {/* <TableHead>Avans</TableHead> */}
+                    <TableHead>Avans</TableHead>
                     <TableHead>Qoldiq</TableHead>
                     <TableHead>Sana</TableHead>
                     <TableHead className="text-right">Amallar</TableHead>
@@ -358,7 +397,10 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                 </TableHeader>
                 <TableBody>
                   {filteredOrders.map((order) => (
-                    <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50">
+                    <TableRow
+                      key={order.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                    >
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-primary rounded-full"></div>
@@ -379,11 +421,13 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                         {formatCurrency(order.totalAmount)}
                       </TableCell>
                       <TableCell>
-                        <Badge className={getPaymentTypeColor(order.paymentType)}>
+                        <Badge
+                          className={getPaymentTypeColor(order.paymentType)}
+                        >
                           {getPaymentTypeLabel(order.paymentType)}
                         </Badge>
                       </TableCell>
-                      {/* <TableCell>
+                      <TableCell>
                         {order.advancePayment > 0 ? (
                           <span className="text-green-600 font-medium">
                             {formatCurrency(order.advancePayment)}
@@ -391,7 +435,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}
-                      </TableCell> */}
+                      </TableCell>
                       <TableCell>
                         {order.remainingBalance > 0 ? (
                           <div className="flex flex-col">
@@ -404,7 +448,9 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                           </div>
                         ) : (
                           <div className="flex flex-col">
-                            <span className="text-green-600 font-medium">To'liq to'langan</span>
+                            <span className="text-green-600 font-medium">
+                              To'liq to'langan
+                            </span>
                             <span className="text-xs text-muted-foreground">
                               {formatCurrency(order.totalAmount)}
                             </span>
@@ -419,7 +465,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {/* <Button
+                          <Button
                             variant="ghost"
                             size="sm"
                             onClick={(e) => handleViewOrder(order, e)}
@@ -427,7 +473,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                             title="Ko'rish"
                           >
                             <Eye className="h-3 w-3" />
-                          </Button> */}
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -473,48 +519,56 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
 
       {/* Order Details Dialog */}
       {selectedOrder && (
-        <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+        <Dialog
+          open={!!selectedOrder}
+          onOpenChange={() => setSelectedOrder(null)}
+        >
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Mijoz buyurtmasi tafsilotlari</DialogTitle>
               <DialogDescription>
-                {selectedOrder.customerName} - {formatDate(selectedOrder.createdAt)}
+                {selectedOrder.customerName} -{" "}
+                {formatDate(selectedOrder.createdAt)}
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Mijoz nomi</Label>
                   <p className="text-sm">{selectedOrder.customerName}</p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Telefon raqami</Label>
-                  <p className="text-sm">{selectedOrder.phoneNumber || 'Kiritilmagan'}</p>
+                  <p className="text-sm">
+                    {selectedOrder.phoneNumber || "Kiritilmagan"}
+                  </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Jami summa</Label>
                   <p className="text-sm font-semibold text-primary">
                     {formatCurrency(selectedOrder.totalAmount)}
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">To'lov turi</Label>
-                  <Badge className={getPaymentTypeColor(selectedOrder.paymentType)}>
+                  <Badge
+                    className={getPaymentTypeColor(selectedOrder.paymentType)}
+                  >
                     {getPaymentTypeLabel(selectedOrder.paymentType)}
                   </Badge>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Avans to'lovi</Label>
                   <p className="text-sm text-green-600 font-medium">
                     {formatCurrency(selectedOrder.advancePayment)}
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Qolgan summa</Label>
                   <p className="text-sm text-orange-600 font-medium">
@@ -522,9 +576,9 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                   </p>
                 </div>
               </div>
-              
+
               <Separator />
-              
+
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
