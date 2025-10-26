@@ -18,6 +18,7 @@ interface PaymentRecord {
   date: string;
   type: 'advance' | 'payment';
   description: string;
+  paymentType?: 'cash' | 'click' | 'transfer';
 }
 
 interface PaymentRecordModalProps {
@@ -34,7 +35,8 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
   const [newPayment, setNewPayment] = useState({
     amount: '',
     type: 'payment' as 'advance' | 'payment',
-    description: ''
+    description: '',
+    paymentType: 'cash' as 'cash' | 'click' | 'transfer'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -70,19 +72,35 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
         amount: record.amount,
         date: record.paymentDate,
         type: record.paymentType,
-        description: record.description
+        description: record.description,
+        paymentType: record.paymentMethod || 'cash' // Default to cash if not specified
       }));
 
-      // If no existing records, add the initial advance payment
+      // Check if advance payment record already exists in database
+      const hasAdvanceRecord = modalRecords.some(record => record.type === 'advance');
+      
+      // If no existing records and there's an advance payment, add the initial advance payment
       if (modalRecords.length === 0 && order.advancePayment > 0) {
         const existingAdvance: PaymentRecord = {
           id: 'existing-advance',
           amount: order.advancePayment,
           date: order.createdAt.toISOString().split('T')[0],
           type: 'advance',
-          description: 'Dastlabki avans to\'lovi'
+          description: 'Dastlabki avans to\'lovi',
+          paymentType: order.paymentType
         };
         setPaymentRecords([existingAdvance]);
+      } else if (!hasAdvanceRecord && order.advancePayment > 0) {
+        // If there are other records but no advance record, add it
+        const existingAdvance: PaymentRecord = {
+          id: 'existing-advance',
+          amount: order.advancePayment,
+          date: order.createdAt.toISOString().split('T')[0],
+          type: 'advance',
+          description: 'Dastlabki avans to\'lovi',
+          paymentType: order.paymentType
+        };
+        setPaymentRecords([existingAdvance, ...modalRecords]);
       } else {
         setPaymentRecords(modalRecords);
       }
@@ -95,9 +113,12 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
           amount: order.advancePayment,
           date: order.createdAt.toISOString().split('T')[0],
           type: 'advance',
-          description: 'Dastlabki avans to\'lovi'
+          description: 'Dastlabki avans to\'lovi',
+          paymentType: order.paymentType
         };
         setPaymentRecords([existingAdvance]);
+      } else {
+        setPaymentRecords([]);
       }
     } finally {
       setLoadingHistory(false);
@@ -119,11 +140,12 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
       amount: parseFloat(newPayment.amount),
       date: new Date().toISOString().split('T')[0],
       type: newPayment.type,
-      description: newPayment.description || `${newPayment.type === 'advance' ? 'Avans' : 'To\'lov'} - ${new Date().toLocaleDateString('uz-UZ')}`
+      description: newPayment.description || `${newPayment.type === 'advance' ? 'Avans' : 'To\'lov'} - ${new Date().toLocaleDateString('uz-UZ')}`,
+      paymentType: newPayment.paymentType
     };
 
     setPaymentRecords(prev => [...prev, payment]);
-    setNewPayment({ amount: '', type: 'payment', description: '' });
+    setNewPayment({ amount: '', type: 'payment', description: '', paymentType: 'cash' });
   };
 
   const handleRemovePayment = async (id: string) => {
@@ -192,7 +214,8 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
           amount: record.amount,
           paymentType: record.type,
           description: record.description,
-          paymentDate: record.date
+          paymentDate: record.date,
+          paymentMethod: record.paymentType || 'cash'
         }));
 
         await savePaymentRecords(order.id, recordsToSave);
@@ -312,7 +335,7 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
               <CardTitle className="text-lg">Yangi to'lov qo'shish</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <Label htmlFor="payment-amount">Summa</Label>
                   <Input
@@ -334,6 +357,21 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
                     <SelectContent>
                       <SelectItem value="advance">Avans</SelectItem>
                       <SelectItem value="payment">To'lov</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="payment-method">To'lov usuli</Label>
+                  <Select value={newPayment.paymentType} onValueChange={(value: 'cash' | 'click' | 'transfer') => 
+                    setNewPayment(prev => ({ ...prev, paymentType: value }))
+                  }>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">NAQD</SelectItem>
+                      <SelectItem value="click">CLICK</SelectItem>
+                      <SelectItem value="transfer">PERECHESLENIYA</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -384,13 +422,25 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={
-                        payment.type === 'advance' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-green-100 text-green-800'
-                      }>
-                        {payment.type === 'advance' ? 'Avans' : 'To\'lov'}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge className={
+                          payment.type === 'advance' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-green-100 text-green-800'
+                        }>
+                          {payment.type === 'advance' ? 'Avans' : 'To\'lov'}
+                        </Badge>
+                        <Badge className={
+                          payment.paymentType === 'cash' 
+                            ? 'bg-green-100 text-green-800'
+                            : payment.paymentType === 'click'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-purple-100 text-purple-800'
+                        }>
+                          {payment.paymentType === 'cash' ? 'NAQD' : 
+                           payment.paymentType === 'click' ? 'CLICK' : 'PERECHESLENIYA'}
+                        </Badge>
+                      </div>
                       {payment.id !== 'existing-advance' && (
                         <Button
                           variant="ghost"

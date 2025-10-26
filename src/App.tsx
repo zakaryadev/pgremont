@@ -11,6 +11,7 @@ import PolygraphyPage from "./pages/PolygraphyPage";
 import TabletsPage from "./pages/TabletsPage";
 import LettersPage from "./pages/LettersPage";
 import OtherServicesPage from "./pages/OtherServicesPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 
@@ -54,6 +55,11 @@ const App = () => {
             <Route path="/other-services" element={
               <ProtectedRoute>
                 <OtherServicesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <AnalyticsPage />
               </ProtectedRoute>
             } />
             <Route path="/admin" element={

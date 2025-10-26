@@ -40,8 +40,15 @@ const OtherServicesPage = () => {
       [field]: value
     };
 
-    // For new orders, advance payment and remaining balance are always 0
-    // No need to calculate remaining balance for new orders
+    // Calculate remaining balance when total amount or advance payment changes
+    if (field === 'totalAmount' || field === 'advancePayment') {
+      const totalAmount = parseFloat(field === 'totalAmount' ? value : newFormData.totalAmount) || 0;
+      const advancePayment = parseFloat(field === 'advancePayment' ? value : newFormData.advancePayment) || 0;
+      const remainingBalance = Math.max(0, totalAmount - advancePayment);
+      
+      newFormData.remainingBalance = remainingBalance.toString();
+    }
+
     setFormData(newFormData);
   };
 
@@ -83,6 +90,28 @@ const OtherServicesPage = () => {
       return;
     }
 
+    // Validate advance payment
+    const totalAmount = parseFloat(formData.totalAmount);
+    const advancePayment = parseFloat(formData.advancePayment) || 0;
+    
+    if (advancePayment < 0) {
+      toast({
+        title: "Xatolik",
+        description: "Avans to'lov manfiy bo'lishi mumkin emas",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (advancePayment > totalAmount) {
+      toast({
+        title: "Xatolik",
+        description: "Avans to'lov umumiy summadan ko'p bo'lishi mumkin emas",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       
@@ -107,8 +136,8 @@ const OtherServicesPage = () => {
         phoneNumber: '',
         totalAmount: '',
         paymentType: '',
-        advancePayment: '0', // Always 0 for new orders
-        remainingBalance: '0' // Always 0 for new orders
+        advancePayment: '0',
+        remainingBalance: '0'
       });
 
     } catch (error) {
@@ -218,14 +247,13 @@ const OtherServicesPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="advancePayment">TO'LOV HOLATI</Label>
+                    <Label htmlFor="advancePayment">AVANS TO'LOV</Label>
                     <Input
                       id="advancePayment"
-                      type="text"
-                      value="To'liq to'lov"
-                      readOnly
-                      className="bg-green-50 text-green-700 font-medium"
-                      placeholder="To'liq to'lov"
+                      type="number"
+                      value={formData.advancePayment}
+                      onChange={(e) => handleInputChange('advancePayment', e.target.value)}
+                      placeholder="Avans summasini kiriting"
                     />
                   </div>
 
@@ -234,10 +262,14 @@ const OtherServicesPage = () => {
                     <Input
                       id="remainingBalance"
                       type="text"
-                      value="0 so'm"
+                      value={`${formData.remainingBalance} so'm`}
                       readOnly
-                      className="bg-green-50 text-green-700 font-medium"
-                      placeholder="Qolgan summa yo'q"
+                      className={`font-medium ${
+                        parseFloat(formData.remainingBalance) === 0 
+                          ? 'bg-green-50 text-green-700' 
+                          : 'bg-yellow-50 text-yellow-700'
+                      }`}
+                      placeholder="Qolgan summa"
                     />
                   </div>
                 </div>

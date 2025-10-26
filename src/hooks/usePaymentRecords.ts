@@ -8,6 +8,7 @@ export interface PaymentRecord {
   paymentType: 'advance' | 'payment';
   description: string;
   paymentDate: string;
+  paymentMethod?: 'cash' | 'click' | 'transfer';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,7 +42,8 @@ export function usePaymentRecords() {
         amount: record.amount,
         payment_type: record.paymentType,
         description: record.description,
-        payment_date: record.paymentDate
+        payment_date: record.paymentDate,
+        payment_method: record.paymentMethod || 'cash'
       }));
 
       const { data, error: insertError } = await supabase
@@ -119,6 +121,7 @@ export function usePaymentRecords() {
         paymentType: record.payment_type,
         description: record.description,
         paymentDate: record.payment_date,
+        paymentMethod: record.payment_method || 'cash',
         createdAt: new Date(record.created_at),
         updatedAt: new Date(record.updated_at)
       }));

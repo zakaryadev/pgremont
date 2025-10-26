@@ -108,6 +108,32 @@ export function useCustomerOrders() {
         throw new Error('No data returned from insert operation');
       }
 
+      // If there's an advance payment, automatically create a payment record
+      if (advancePayment > 0) {
+        try {
+          const paymentRecordData = {
+            order_id: data.id,
+            amount: advancePayment,
+            payment_type: 'advance',
+            description: 'Dastlabki avans to\'lovi',
+            payment_date: new Date().toISOString().split('T')[0],
+            payment_method: paymentType
+          };
+
+          const { error: paymentRecordError } = await supabase
+            .from('payment_records')
+            .insert([paymentRecordData]);
+
+          if (paymentRecordError) {
+            console.warn('Failed to create advance payment record:', paymentRecordError);
+            // Don't throw error here as the main order was saved successfully
+          }
+        } catch (paymentError) {
+          console.warn('Failed to create advance payment record:', paymentError);
+          // Don't throw error here as the main order was saved successfully
+        }
+      }
+
       const newOrder: CustomerOrder = {
         id: data.id,
         customerName: data.customer_name,

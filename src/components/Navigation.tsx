@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { AuthModal } from './auth/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, User, Settings, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 
@@ -103,6 +103,16 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
                 <User className="h-4 w-4" />
                 <span>{isAdmin ? 'Admin' : user.email}</span>
               </div>
+              <Link to="/analytics">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Analiz
+                </Button>
+              </Link>
               {isAdmin && (
                 <Link to="/admin">
                   <Button

@@ -1,9 +1,15 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, History } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Save, History } from "lucide-react";
 
 interface OrderFormProps {
   onSaveOrder: (orderData: { name: string; phone?: string }) => void;
@@ -11,20 +17,27 @@ interface OrderFormProps {
   disabled?: boolean;
 }
 
-export function OrderForm({ onSaveOrder, onShowHistory, disabled }: OrderFormProps) {
-  const [orderName, setOrderName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+export function OrderForm({
+  onSaveOrder,
+  onShowHistory,
+  disabled,
+}: OrderFormProps) {
+  const [orderName, setOrderName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   const handleSave = () => {
     if (orderName.trim()) {
-      onSaveOrder({ name: orderName.trim(), phone: phoneNumber.trim() || undefined });
-      setOrderName('');
-      setPhoneNumber('');
+      onSaveOrder({
+        name: orderName.trim(),
+        phone: phoneNumber.trim() || undefined,
+      });
+      setOrderName("");
+      setPhoneNumber("");
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSave();
     }
   };
@@ -36,9 +49,7 @@ export function OrderForm({ onSaveOrder, onShowHistory, disabled }: OrderFormPro
           <Save className="h-5 w-5" />
           Buyurtmani saqlash
         </CardTitle>
-        <CardDescription>
-          Joriy hisob-kitobni nom bilan saqlang
-        </CardDescription>
+        <CardDescription>Joriy hisob-kitobni nom bilan saqlang</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -64,19 +75,15 @@ export function OrderForm({ onSaveOrder, onShowHistory, disabled }: OrderFormPro
           />
         </div>
         <div className="flex gap-2">
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={!orderName.trim() || disabled}
             className="flex-1"
           >
             <Save className="h-4 w-4 mr-2" />
             Saqlash
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={onShowHistory}
-            className="flex-1"
-          >
+          <Button variant="outline" onClick={onShowHistory} className="flex-1">
             <History className="h-4 w-4 mr-2" />
             Tarix
           </Button>

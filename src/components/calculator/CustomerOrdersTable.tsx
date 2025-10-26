@@ -350,7 +350,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                     <TableHead>Telefon</TableHead>
                     <TableHead>Jami summa</TableHead>
                     <TableHead>To'lov turi</TableHead>
-                    <TableHead>Avans</TableHead>
+                    {/* <TableHead>Avans</TableHead> */}
                     <TableHead>Qoldiq</TableHead>
                     <TableHead>Sana</TableHead>
                     <TableHead className="text-right">Amallar</TableHead>
@@ -383,7 +383,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                           {getPaymentTypeLabel(order.paymentType)}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      {/* <TableCell>
                         {order.advancePayment > 0 ? (
                           <span className="text-green-600 font-medium">
                             {formatCurrency(order.advancePayment)}
@@ -391,7 +391,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell>
                         {order.remainingBalance > 0 ? (
                           <div className="flex flex-col">
