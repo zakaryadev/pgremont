@@ -155,7 +155,7 @@ export function PaymentMethodPieChart({
             <div>
               <div className="text-lg font-semibold">Jami Daromad</div>
               <div className="text-sm text-gray-600">
-                {totalCount} ta buyurtma
+                {totalCount} ta to'lov tarixi
               </div>
             </div>
             <div className="text-2xl font-bold text-primary">
