@@ -10,6 +10,7 @@ import { Search, Save, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomerOrders } from '@/hooks/useCustomerOrders';
 import { CustomerOrdersTable } from '@/components/calculator/CustomerOrdersTable';
+import { NumericFormat } from 'react-number-format';
 
 interface CustomerFormData {
   customerName: string;
@@ -35,21 +36,32 @@ const OtherServicesPage = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: keyof CustomerFormData, value: string) => {
+    // For numeric fields, remove all non-digit characters before saving
+    const numericFields: (keyof CustomerFormData)[] = ['totalAmount', 'advancePayment', 'remainingBalance'];
+    const processedValue = numericFields.includes(field) 
+      ? value.replace(/\D/g, '') 
+      : value;
+
     const newFormData = {
       ...formData,
-      [field]: value
+      [field]: processedValue
     };
 
     // Calculate remaining balance when total amount or advance payment changes
     if (field === 'totalAmount' || field === 'advancePayment') {
-      const totalAmount = parseFloat(field === 'totalAmount' ? value : newFormData.totalAmount) || 0;
-      const advancePayment = parseFloat(field === 'advancePayment' ? value : newFormData.advancePayment) || 0;
+      const totalAmount = parseInt(field === 'totalAmount' ? processedValue : newFormData.totalAmount) || 0;
+      const advancePayment = parseInt(field === 'advancePayment' ? processedValue : newFormData.advancePayment) || 0;
       const remainingBalance = Math.max(0, totalAmount - advancePayment);
       
       newFormData.remainingBalance = remainingBalance.toString();
     }
 
     setFormData(newFormData);
+  };
+
+  // Format number with thousand separators
+  const formatNumber = (value: string) => {
+    return value ? parseInt(value).toLocaleString('en-US') : '';
   };
 
   const handleSave = async () => {
@@ -221,12 +233,14 @@ const OtherServicesPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="totalAmount">UMUMIY SUMMASI</Label>
-                    <Input
+                    <NumericFormat
                       id="totalAmount"
-                      type="number"
                       value={formData.totalAmount}
-                      onChange={(e) => handleInputChange('totalAmount', e.target.value)}
-                      placeholder="Jami summa"
+                      onValueChange={(values) => handleInputChange('totalAmount', values.value)}
+                      thousandSeparator=" "
+                      allowNegative={false}
+                      customInput={Input}
+                      placeholder="Umumiy summani kiriting"
                     />
                   </div>
 
@@ -248,24 +262,27 @@ const OtherServicesPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="advancePayment">AVANS TO'LOV</Label>
-                    <Input
+                    <NumericFormat
                       id="advancePayment"
-                      type="number"
                       value={formData.advancePayment}
-                      onChange={(e) => handleInputChange('advancePayment', e.target.value)}
-                      placeholder="Avans summasini kiriting"
+                      onValueChange={(values) => handleInputChange('advancePayment', values.value)}
+                      thousandSeparator=" "
+                      allowNegative={false}
+                      customInput={Input}
+                      placeholder="Avans to'lov miqdorini kiriting"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="remainingBalance">QOLDIQ</Label>
-                    <Input
+                    <NumericFormat
                       id="remainingBalance"
-                      type="text"
-                      value={`${formData.remainingBalance} so'm`}
+                      value={formData.remainingBalance}
+                      thousandSeparator=" "
+                      customInput={Input}
                       readOnly
                       className={`font-medium ${
-                        parseFloat(formData.remainingBalance) === 0 
+                        parseInt(formData.remainingBalance) === 0 
                           ? 'bg-green-50 text-green-700' 
                           : 'bg-yellow-50 text-yellow-700'
                       }`}

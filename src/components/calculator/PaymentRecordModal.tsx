@@ -11,6 +11,7 @@ import { Save, X, Plus, Minus } from 'lucide-react';
 import { CustomerOrder } from '@/hooks/useCustomerOrders';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentRecords } from '@/hooks/usePaymentRecords';
+import { NumericFormat } from 'react-number-format';
 
 interface PaymentRecord {
   id: string;
@@ -38,6 +39,11 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
     description: '',
     paymentType: 'cash' as 'cash' | 'click' | 'transfer'
   });
+
+  // Handle numeric input changes
+  const handleAmountChange = (values: { value: string, floatValue?: number }) => {
+    setNewPayment(prev => ({ ...prev, amount: values.value }));
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -126,7 +132,8 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
   };
 
   const handleAddPayment = () => {
-    if (!newPayment.amount || parseFloat(newPayment.amount) <= 0) {
+    const amountValue = newPayment.amount.replace(/\s+/g, '');
+    if (!amountValue || parseFloat(amountValue) <= 0) {
       toast({
         title: "Xatolik",
         description: "To'lov summasini kiriting",
@@ -137,7 +144,7 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
 
     const payment: PaymentRecord = {
       id: `temp-${Date.now()}`, // Temporary ID for new payments
-      amount: parseFloat(newPayment.amount),
+      amount: parseFloat(newPayment.amount.replace(/\s+/g, '')),
       date: new Date().toISOString().split('T')[0],
       type: newPayment.type,
       description: newPayment.description || `${newPayment.type === 'advance' ? 'Avans' : 'To\'lov'} - ${new Date().toLocaleDateString('uz-UZ')}`,
@@ -338,11 +345,13 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <Label htmlFor="payment-amount">Summa</Label>
-                  <Input
+                  <NumericFormat
                     id="payment-amount"
-                    type="number"
                     value={newPayment.amount}
-                    onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
+                    onValueChange={handleAmountChange}
+                    thousandSeparator=" "
+                    allowNegative={false}
+                    customInput={Input}
                     placeholder="To'lov summa"
                   />
                 </div>

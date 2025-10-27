@@ -36,7 +36,25 @@ export const materials: Record<string, Material> = {
     widths: [0.9, 1.22, 1.52], 
     price: 80000,
     wastePrice: 35000
-  }
+  },
+  solncez: { 
+    name: 'Солнцезащита', 
+    widths: [1.52, 0.76], 
+    price: 150000,
+    wastePrice: 50000
+  },
+  tanirovka: { 
+    name: 'Танировка', 
+    widths: [1.52, 0.76], 
+    price: 120000,
+    wastePrice: 65000
+  },
+  tumanka: { 
+    name: 'Туманка', 
+    widths: [1.27], 
+    price: 120000,
+    wastePrice: 45000
+  },
 };
 
 export const services: Record<string, Service> = {
