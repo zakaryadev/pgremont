@@ -381,7 +381,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
               </Button>
             </div>
           ) : (
-            <ScrollArea className="h-[500px]">
+            <ScrollArea className="h-[500px] w-full">
               <Table>
                 <TableHeader>
                   <TableRow>
