@@ -53,22 +53,8 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
       setIsAdmin(false);
       return;
     }
-
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        setIsAdmin(user.email === 'admin@togogroup.com');
-      } else {
-        setIsAdmin((profile as any)?.role === 'admin');
-      }
-    } catch (error) {
-      setIsAdmin(user.email === 'admin@togogroup.com');
-    }
+    // Check if user has admin role
+    setIsAdmin(user.role === 'admin');
   };
 
   const handleSignOut = async () => {
@@ -103,16 +89,18 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
                 <User className="h-4 w-4" />
                 <span>{isAdmin ? 'Admin' : user.email}</span>
               </div>
-              <Link to="/analytics">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  Analiz
-                </Button>
-              </Link>
+              {isAdmin && (
+                <Link to="/analytics">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    Analiz
+                  </Button>
+                </Link>
+              )}
               {isAdmin && (
                 <Link to="/admin">
                   <Button

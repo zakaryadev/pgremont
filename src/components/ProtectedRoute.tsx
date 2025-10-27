@@ -1,6 +1,10 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LoginForm } from './auth/LoginForm';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+
+// Define admin-only routes
+const ADMIN_ONLY_ROUTES = ['/analytics', '/admin'];
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,6 +12,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -20,6 +25,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
+  // If user is not logged in, show login form
   if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -39,6 +45,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         </div>
       </div>
     );
+  }
+
+  // Check if the current route is admin-only
+  const isAdminRoute = ADMIN_ONLY_ROUTES.some(route => 
+    location.pathname.startsWith(route)
+  );
+
+  // If it's an admin route and user is not admin, redirect to home
+  if (isAdminRoute && user.role !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
