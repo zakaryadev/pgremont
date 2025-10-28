@@ -23,6 +23,13 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { uz } from "date-fns/locale";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
   Search,
   Edit,
@@ -39,6 +46,8 @@ import {
   RefreshCw,
   Pause,
   Play,
+  SlidersHorizontal,
+  Calendar as CalendarIcon2,
 } from "lucide-react";
 import { CustomerOrder, useCustomerOrders } from "@/hooks/useCustomerOrders";
 import { useToast } from "@/hooks/use-toast";
@@ -64,11 +73,15 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
   const [paymentOrder, setPaymentOrder] = useState<CustomerOrder | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
-  const [showFullyPaid, setShowFullyPaid] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
-  // Filter orders based on search query and fully paid status
+  // Filter orders based on search query, payment type, date range and other filters
   const filteredOrders = useMemo(() => {
-    let filtered = orders;
+    let filtered = [...orders];
 
     // Filter by search query
     if (searchQuery.trim()) {
@@ -77,17 +90,35 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
         (order) =>
           order.customerName.toLowerCase().includes(query) ||
           order.phoneNumber?.toLowerCase().includes(query) ||
-          order.paymentType.toLowerCase().includes(query)
+          order.paymentType.toLowerCase().includes(query) ||
+          order.id.toLowerCase().includes(query)
       );
     }
 
-    // Filter by fully paid status
-    if (!showFullyPaid) {
+    // Filter by payment type
+    if (paymentTypeFilter !== 'all') {
+      filtered = filtered.filter(order => order.paymentType === paymentTypeFilter);
+    }
+
+    // Filter by date range
+    if (dateRange.from || dateRange.to) {
+      filtered = filtered.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        const fromValid = !dateRange.from || orderDate >= dateRange.from;
+        const toValid = !dateRange.to || orderDate <= new Date(dateRange.to.getTime() + 24 * 60 * 60 * 1000); // Add 1 day to include the end date
+        return fromValid && toValid;
+      });
+    }
+
+    // Filter by payment status
+    if (paymentStatusFilter === 'paid') {
+      filtered = filtered.filter((order) => order.remainingBalance <= 0);
+    } else if (paymentStatusFilter === 'unpaid') {
       filtered = filtered.filter((order) => order.remainingBalance > 0);
     }
 
     return filtered;
-  }, [orders, searchQuery, showFullyPaid]);
+  }, [orders, searchQuery, paymentTypeFilter, paymentStatusFilter, dateRange]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
@@ -251,11 +282,6 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                     (Ko'rsatilmoqda: {filteredOrders.length} ta)
                   </span>
                 )}
-                {!showFullyPaid && (
-                  <span className="ml-2 text-blue-600">
-                    (To'liq to'langanlar yashirilgan)
-                  </span>
-                )}
                 {autoRefreshEnabled && (
                   <span className="ml-2 text-green-600 flex items-center gap-1">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -265,41 +291,27 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center space-x-2">
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Mijoz nomi, telefon yoki to'lov turi bo'yicha qidiring..."
+                  type="search"
+                  placeholder="Qidirish..."
+                  className="w-full pl-8"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-10 w-full sm:w-80"
                 />
-                {searchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearSearch}
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                )}
               </div>
 
               <div className="flex items-center gap-2">
                 <Button
-                  variant={showFullyPaid ? "default" : "outline"}
+                  variant="outline"
                   size="sm"
-                  onClick={() => setShowFullyPaid(!showFullyPaid)}
+                  onClick={() => setShowFilters(!showFilters)}
                   className="flex items-center gap-2"
-                  title={
-                    showFullyPaid
-                      ? "To'liq to'langan buyurtmalarni yashirish"
-                      : "To'liq to'langan buyurtmalarni ko'rsatish"
-                  }
                 >
-                  <Eye className="h-4 w-4" />
-                  {showFullyPaid ? "Yashirish" : "Ko'rsatish"}
+                  <Filter className="h-4 w-4" />
+                  Filtrlash
                 </Button>
 
                 <Button
@@ -335,6 +347,126 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
           </div>
         </CardHeader>
       </Card>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <Card className="overflow-visible">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label>To'lov turi</Label>
+                <Select
+                  value={paymentTypeFilter}
+                  onValueChange={setPaymentTypeFilter}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="To'lov turi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Barcha to'lov turlari</SelectItem>
+                    <SelectItem value="cash">Naqd pul</SelectItem>
+                    <SelectItem value="click">Click</SelectItem>
+                    <SelectItem value="transfer">O'tkazma</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>To'lov holati</Label>
+                <Select
+                  value={paymentStatusFilter}
+                  onValueChange={setPaymentStatusFilter}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="To'lov holati" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Barchasi</SelectItem>
+                    <SelectItem value="paid">To'liq to'langan</SelectItem>
+                    <SelectItem value="unpaid">Qarzdor</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Boshlanish sanasi</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dateRange.from && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange.from ? (
+                        format(dateRange.from, "PPP", { locale: uz })
+                      ) : (
+                        <span>Sanani tanlang</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateRange.from}
+                      onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Tugash sanasi</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dateRange.to && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange.to ? (
+                        format(dateRange.to, "PPP", { locale: uz })
+                      ) : (
+                        <span>Sanani tanlang</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateRange.to}
+                      onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setPaymentTypeFilter('all');
+                  setPaymentStatusFilter('all');
+                  setDateRange({});
+                }}
+                className="flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Filtrlarni tozalash
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Error Alert */}
       {error && (
