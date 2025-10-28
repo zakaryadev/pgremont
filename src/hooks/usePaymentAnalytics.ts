@@ -3,6 +3,7 @@ import { supabase } from "../integrations/supabase/client";
 
 export interface PaymentAnalytics {
   totalRevenue: number;
+  totalDebt: number;
   paymentMethodStats: {
     cash: { amount: number; count: number };
     click: { amount: number; count: number };
@@ -42,7 +43,7 @@ export function usePaymentAnalytics() {
       setLoading(true);
       setError(null);
 
-      const { startDate, endDate, paymentMethod } = filters;
+      const { startDate, endDate } = filters;
 
       // Build the base query
       // startDate va endDate string bo‘lsa (masalan "2025-10-26")
@@ -83,6 +84,7 @@ export function usePaymentAnalytics() {
       if (!orders) {
         setAnalytics({
           totalRevenue: 0,
+          totalDebt: 0,
           paymentMethodStats: {
             cash: { amount: 0, count: 0 },
             click: { amount: 0, count: 0 },
@@ -97,6 +99,7 @@ export function usePaymentAnalytics() {
       // Process the data
       const analyticsData: PaymentAnalytics = {
         totalRevenue: 0,
+        totalDebt: 0,
         paymentMethodStats: {
           cash: { amount: 0, count: 0 },
           click: { amount: 0, count: 0 },
@@ -105,6 +108,36 @@ export function usePaymentAnalytics() {
         monthlyStats: [],
         dailyStats: [],
       };
+
+      // Calculate total debt from all orders
+      interface CustomerOrder {
+        id: string;
+        total_amount: string;
+        advance_payment: string;
+        payment_records: Array<{
+          amount: string;
+          payment_type: string;
+        }>;
+      }
+
+      const { data: allOrders, error: allOrdersError } = await supabase
+        .from('customer_orders')
+        .select('id, total_amount, advance_payment, payment_records(amount, payment_type)');
+
+      if (allOrders) {
+        (allOrders as unknown as CustomerOrder[]).forEach(order => {
+          const totalAmount = parseFloat(order.total_amount);
+          const advancePayment = parseFloat(order.advance_payment) || 0;
+          
+          // Calculate total payments (excluding advance payment)
+          const payments = (order.payment_records || []).reduce((sum, record) => {
+            return record.payment_type === 'payment' ? sum + parseFloat(record.amount) : sum;
+          }, 0);
+          
+          const remainingBalance = Math.max(0, totalAmount - advancePayment - payments);
+          analyticsData.totalDebt += remainingBalance;
+        });
+      }
 
       // Group by month for monthly stats
       const monthlyMap = new Map<
