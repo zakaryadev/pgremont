@@ -21,7 +21,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -54,6 +53,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EditCustomerOrderModal } from "./EditCustomerOrderModal";
 import { PaymentRecordModal } from "./PaymentRecordModal";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CustomerOrdersTableProps {
   onEditOrder?: (order: CustomerOrder) => void;
@@ -62,6 +62,7 @@ interface CustomerOrdersTableProps {
 export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
   const { orders, loading, error, deleteOrder, updateOrder, refreshOrders } =
     useCustomerOrders();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -513,17 +514,18 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
               </Button>
             </div>
           ) : (
-            <ScrollArea className="h-[500px] w-full">
-              <Table>
+            <div className="w-full overflow-x-auto">
+              <div className="max-h-[70vh] overflow-y-auto w-full">
+                <Table className="min-w-[720px] md:min-w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Mijoz</TableHead>
-                    <TableHead>Telefon</TableHead>
+                    <TableHead className="hidden sm:table-cell">Telefon</TableHead>
                     <TableHead>Jami summa</TableHead>
                     <TableHead>To'lov turi</TableHead>
-                    <TableHead>Avans</TableHead>
+                      <TableHead className="hidden sm:table-cell">Avans</TableHead>
                     <TableHead>Qoldiq</TableHead>
-                    <TableHead>Sana</TableHead>
+                      <TableHead className="hidden sm:table-cell">Sana</TableHead>
                     <TableHead className="text-right">Amallar</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -539,7 +541,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                           {order.customerName}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         {order.phoneNumber ? (
                           <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
@@ -549,7 +551,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="font-semibold text-primary">
+                      <TableCell className="font-semibold text-primary whitespace-nowrap">
                         {formatCurrency(order.totalAmount)}
                       </TableCell>
                       <TableCell>
@@ -559,7 +561,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                           {getPaymentTypeLabel(order.paymentType)}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         {order.advancePayment > 0 ? (
                           <span className="text-green-600 font-medium">
                             {formatCurrency(order.advancePayment)}
@@ -589,7 +591,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell whitespace-nowrap">
                         <div className="flex items-center gap-1 text-sm">
                           <Calendar className="h-3 w-3" />
                           {formatDate(order.createdAt)}
@@ -624,27 +626,30 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => handleDeleteOrder(order.id, e)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            disabled={deletingId === order.id}
-                            title="O'chirish"
-                          >
-                            {deletingId === order.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-3 w-3" />
-                            )}
-                          </Button>
+                          {user?.role === 'admin' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleDeleteOrder(order.id, e)}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              disabled={deletingId === order.id}
+                              title="O'chirish"
+                            >
+                              {deletingId === order.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
-            </ScrollArea>
+                </Table>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
