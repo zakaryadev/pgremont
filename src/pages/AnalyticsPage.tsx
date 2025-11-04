@@ -89,7 +89,7 @@ const AnalyticsPage = () => {
             <>
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <Card>
+                <Card onClick={() => navigate('/other-services?debt=all', { state: { showDebtors: true } })} className="cursor-pointer hover:bg-red-50/40">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Jami Qarzdorlik</CardTitle>
                     <AlertCircle className="h-4 w-4 text-red-600" />
@@ -252,3 +252,4 @@ const AnalyticsPage = () => {
 };
 
 export default AnalyticsPage;
+

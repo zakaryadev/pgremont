@@ -58,9 +58,13 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface CustomerOrdersTableProps {
   onEditOrder?: (order: CustomerOrder) => void;
+  initialPaymentStatus?: 'all' | 'paid' | 'unpaid';
+  initialShowFilters?: boolean;
+  initialPartialOnly?: boolean;
+  disableDefaultMonthRange?: boolean;
 }
 
-export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
+export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all', initialShowFilters = false, initialPartialOnly = false, disableDefaultMonthRange = false }: CustomerOrdersTableProps) {
   const { orders, loading, error, deleteOrder, updateOrder, refreshOrders } =
     useCustomerOrders();
   const { user } = useAuth();
@@ -75,13 +79,14 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
   const [paymentOrder, setPaymentOrder] = useState<CustomerOrder | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(initialShowFilters);
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>(initialPaymentStatus);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | 'all'>('all');
   const [currentMonthDate, setCurrentMonthDate] = useState<Date>(new Date());
+  const [partialOnly, setPartialOnly] = useState<boolean>(initialPartialOnly);
   const daysScrollerRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
@@ -93,11 +98,13 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
   const monthEnd = useMemo(() => new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 0), [currentMonthDate]);
   const daysInMonth = monthEnd.getDate();
 
-  // Keep selected month range in dateRange; reset day filter when month changes
+  // Keep selected month range in dateRange unless disabled; reset day filter when month changes
   useEffect(() => {
-    setDateRange({ from: monthStart, to: monthEnd });
+    if (!disableDefaultMonthRange) {
+      setDateRange({ from: monthStart, to: monthEnd });
+    }
     setSelectedDay('all');
-  }, [monthStart, monthEnd]);
+  }, [monthStart, monthEnd, disableDefaultMonthRange]);
 
   // Filter orders based on search query, payment type, date range and other filters
   const filteredOrders = useMemo(() => {
@@ -120,9 +127,9 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
       filtered = filtered.filter(order => order.paymentType === paymentTypeFilter);
     }
 
-    // Filter by date range (defaults to current month if empty)
-    const effectiveFrom = dateRange.from || monthStart;
-    const effectiveTo = dateRange.to || monthEnd;
+    // Filter by date range (defaults to current month unless disabled)
+    const effectiveFrom = disableDefaultMonthRange ? dateRange.from : (dateRange.from || monthStart);
+    const effectiveTo = disableDefaultMonthRange ? dateRange.to : (dateRange.to || monthEnd);
     if (effectiveFrom || effectiveTo) {
       filtered = filtered.filter(order => {
         const orderDate = new Date(order.createdAt);
@@ -145,10 +152,13 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
       filtered = filtered.filter((order) => order.remainingBalance <= 0);
     } else if (paymentStatusFilter === 'unpaid') {
       filtered = filtered.filter((order) => order.remainingBalance > 0);
+      if (partialOnly) {
+        filtered = filtered.filter((order) => order.remainingBalance < order.totalAmount);
+      }
     }
 
     return filtered;
-  }, [orders, searchQuery, paymentTypeFilter, paymentStatusFilter, dateRange, selectedDay, monthStart]);
+  }, [orders, searchQuery, paymentTypeFilter, paymentStatusFilter, dateRange, selectedDay, monthStart, partialOnly, disableDefaultMonthRange]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";

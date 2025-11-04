@@ -43,3 +43,4 @@ BEGIN
         RAISE EXCEPTION 'Failed to add payment_method column';
     END IF;
 END $$;
+

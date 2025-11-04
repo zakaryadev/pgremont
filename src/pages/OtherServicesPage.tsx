@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Search, Save, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomerOrders } from '@/hooks/useCustomerOrders';
@@ -23,6 +24,11 @@ interface CustomerFormData {
 
 const OtherServicesPage = () => {
   const navigate = useNavigate();
+  const location = useLocation() as { state?: { showDebtors?: boolean; partialOnly?: boolean } };
+  const searchParams = new URLSearchParams((useLocation() as any).search || '');
+  const queryDebt = searchParams.get('debt');
+  const wantPartialDebtors = location.state?.partialOnly === true || queryDebt === 'partial';
+  const wantDebtors = location.state?.showDebtors === true || queryDebt === 'partial' || queryDebt === 'all';
   const { toast } = useToast();
   const { saveOrder } = useCustomerOrders();
   const [formData, setFormData] = useState<CustomerFormData>({
@@ -34,6 +40,7 @@ const OtherServicesPage = () => {
     remainingBalance: '0' // Always 0 for new orders
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const handleInputChange = (field: keyof CustomerFormData, value: string) => {
     // For numeric fields, remove all non-digit characters before saving
@@ -192,125 +199,138 @@ const OtherServicesPage = () => {
             <h1 className="text-2xl font-bold">Boshqa xizmatlar</h1>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-center">Mijoz ma'lumotlari va buyurtma boshqaruvi</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Customer Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Mijoz ma'lumotlari</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="customerName">MIJOZ NOMI</Label>
-                    <Input
-                      id="customerName"
-                      value={formData.customerName}
-                      onChange={(e) => handleInputChange('customerName', e.target.value)}
-                      placeholder="Mijoz ismini kiriting"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phoneNumber">TELEFON RAQAMI</Label>
-                    <Input
-                      id="phoneNumber"
-                      value={formData.phoneNumber}
-                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                      placeholder="+998 XX XXX XX XX"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Payment Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">To'lov ma'lumotlari</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="totalAmount">UMUMIY SUMMASI</Label>
-                    <NumericFormat
-                      id="totalAmount"
-                      value={formData.totalAmount}
-                      onValueChange={(values) => handleInputChange('totalAmount', values.value)}
-                      thousandSeparator=" "
-                      allowNegative={false}
-                      customInput={Input}
-                      placeholder="Umumiy summani kiriting"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="paymentType">TO'LOV TURI</Label>
-                    <Select value={formData.paymentType} onValueChange={(value) => handleInputChange('paymentType', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="To'lov turini tanlang" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cash">NAQD</SelectItem>
-                        <SelectItem value="click">CLICK</SelectItem>
-                        <SelectItem value="transfer">PERECHESLENIYA</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="advancePayment">AVANS TO'LOV</Label>
-                    <NumericFormat
-                      id="advancePayment"
-                      value={formData.advancePayment}
-                      onValueChange={(values) => handleInputChange('advancePayment', values.value)}
-                      thousandSeparator=" "
-                      allowNegative={false}
-                      customInput={Input}
-                      placeholder="Avans to'lov miqdorini kiriting"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="remainingBalance">QOLDIQ</Label>
-                    <NumericFormat
-                      id="remainingBalance"
-                      value={formData.remainingBalance}
-                      thousandSeparator=" "
-                      customInput={Input}
-                      readOnly
-                      className={`font-medium ${
-                        parseInt(formData.remainingBalance) === 0 
-                          ? 'bg-green-50 text-green-700' 
-                          : 'bg-yellow-50 text-yellow-700'
-                      }`}
-                      placeholder="Qolgan summa"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-4">
-                <Button
-                  onClick={handleSave}
-                  disabled={isLoading}
-                  className="flex items-center gap-2"
-                >
+          <div className="mb-4 flex justify-end">
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
                   <Save className="h-4 w-4" />
-                  {isLoading ? 'Saqlanmoqda...' : 'SAVE'}
+                  Yangi buyurtma
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Mijoz ma'lumotlari va buyurtma boshqaruvi</DialogTitle>
+                  <DialogDescription>Yangi buyurtma ma'lumotlarini kiriting</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6">
+                  {/* Customer Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Mijoz ma'lumotlari</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="customerName">MIJOZ NOMI</Label>
+                        <Input
+                          id="customerName"
+                          value={formData.customerName}
+                          onChange={(e) => handleInputChange('customerName', e.target.value)}
+                          placeholder="Mijoz ismini kiriting"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phoneNumber">TELEFON RAQAMI</Label>
+                        <Input
+                          id="phoneNumber"
+                          value={formData.phoneNumber}
+                          onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                          placeholder="+998 XX XXX XX XX"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Payment Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">To'lov ma'lumotlari</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="totalAmount">UMUMIY SUMMASI</Label>
+                        <NumericFormat
+                          id="totalAmount"
+                          value={formData.totalAmount}
+                          onValueChange={(values) => handleInputChange('totalAmount', values.value)}
+                          thousandSeparator=" "
+                          allowNegative={false}
+                          customInput={Input}
+                          placeholder="Umumiy summani kiriting"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="paymentType">TO'LOV TURI</Label>
+                        <Select value={formData.paymentType} onValueChange={(value) => handleInputChange('paymentType', value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="To'lov turini tanlang" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cash">NAQD</SelectItem>
+                            <SelectItem value="click">CLICK</SelectItem>
+                            <SelectItem value="transfer">PERECHESLENIYA</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="advancePayment">AVANS TO'LOV</Label>
+                        <NumericFormat
+                          id="advancePayment"
+                          value={formData.advancePayment}
+                          onValueChange={(values) => handleInputChange('advancePayment', values.value)}
+                          thousandSeparator=" "
+                          allowNegative={false}
+                          customInput={Input}
+                          placeholder="Avans to'lov miqdorini kiriting"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="remainingBalance">QOLDIQ</Label>
+                        <NumericFormat
+                          id="remainingBalance"
+                          value={formData.remainingBalance}
+                          thousandSeparator=" "
+                          customInput={Input}
+                          readOnly
+                          className={`font-medium ${
+                            parseInt(formData.remainingBalance) === 0 
+                              ? 'bg-green-50 text-green-700' 
+                              : 'bg-yellow-50 text-yellow-700'
+                          }`}
+                          placeholder="Qolgan summa"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-end gap-4">
+                    <Button
+                      onClick={async () => {
+                        await handleSave();
+                        setIsFormOpen(false);
+                      }}
+                      disabled={isLoading}
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      {isLoading ? 'Saqlanmoqda...' : 'SAVE'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
 
           {/* Customer Orders Table */}
           <div className="mt-8">
-            <CustomerOrdersTable />
+            <CustomerOrdersTable
+              initialPaymentStatus={wantDebtors ? 'unpaid' : 'all'}
+              initialShowFilters={wantDebtors}
+              initialPartialOnly={wantPartialDebtors}
+              disableDefaultMonthRange={wantDebtors}
+            />
           </div>
         </div>
       </div>
