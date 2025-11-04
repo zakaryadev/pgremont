@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,7 @@ import {
   SlidersHorizontal,
   Calendar as CalendarIcon2,
 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CustomerOrder, useCustomerOrders } from "@/hooks/useCustomerOrders";
 import { useToast } from "@/hooks/use-toast";
 import { EditCustomerOrderModal } from "./EditCustomerOrderModal";
@@ -79,6 +80,24 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | 'all'>('all');
+  const [currentMonthDate, setCurrentMonthDate] = useState<Date>(new Date());
+  const daysScrollerRef = useRef<HTMLDivElement | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+
+  // Compute current month range and days
+  const now = new Date();
+  const monthStart = useMemo(() => new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth(), 1), [currentMonthDate]);
+  const monthEnd = useMemo(() => new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 0), [currentMonthDate]);
+  const daysInMonth = monthEnd.getDate();
+
+  // Keep selected month range in dateRange; reset day filter when month changes
+  useEffect(() => {
+    setDateRange({ from: monthStart, to: monthEnd });
+    setSelectedDay('all');
+  }, [monthStart, monthEnd]);
 
   // Filter orders based on search query, payment type, date range and other filters
   const filteredOrders = useMemo(() => {
@@ -101,13 +120,23 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
       filtered = filtered.filter(order => order.paymentType === paymentTypeFilter);
     }
 
-    // Filter by date range
-    if (dateRange.from || dateRange.to) {
+    // Filter by date range (defaults to current month if empty)
+    const effectiveFrom = dateRange.from || monthStart;
+    const effectiveTo = dateRange.to || monthEnd;
+    if (effectiveFrom || effectiveTo) {
       filtered = filtered.filter(order => {
         const orderDate = new Date(order.createdAt);
-        const fromValid = !dateRange.from || orderDate >= dateRange.from;
-        const toValid = !dateRange.to || orderDate <= new Date(dateRange.to.getTime() + 24 * 60 * 60 * 1000); // Add 1 day to include the end date
+        const fromValid = !effectiveFrom || orderDate >= effectiveFrom;
+        const toValid = !effectiveTo || orderDate <= new Date(effectiveTo.getTime() + 24 * 60 * 60 * 1000); // Add 1 day to include the end date
         return fromValid && toValid;
+      });
+    }
+
+    // Additional filter by selected day within the month
+    if (selectedDay !== 'all') {
+      filtered = filtered.filter(order => {
+        const d = new Date(order.createdAt);
+        return d.getDate() === selectedDay && d.getMonth() === monthStart.getMonth() && d.getFullYear() === monthStart.getFullYear();
       });
     }
 
@@ -119,7 +148,7 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
     }
 
     return filtered;
-  }, [orders, searchQuery, paymentTypeFilter, paymentStatusFilter, dateRange]);
+  }, [orders, searchQuery, paymentTypeFilter, paymentStatusFilter, dateRange, selectedDay, monthStart]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
@@ -349,6 +378,90 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
         </CardHeader>
       </Card>
 
+      {/* Month Navigator + Day Selector (draggable) */}
+      <Card>
+        <CardContent className="py-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                title="Oldingi oy"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-sm text-muted-foreground min-w-[140px] text-center">
+                {format(monthStart, "LLLL yyyy", { locale: uz })}
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+                title="Keyingi oy"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={selectedDay === 'all' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDay('all')}
+              >
+                Barcha kunlar
+              </Button>
+            </div>
+          </div>
+          <div
+            ref={daysScrollerRef}
+            className="flex gap-2 overflow-x-auto select-none cursor-grab active:cursor-grabbing"
+            onMouseDown={(e) => {
+              isDraggingRef.current = true;
+              dragStartXRef.current = e.pageX - (daysScrollerRef.current?.offsetLeft || 0);
+              scrollLeftRef.current = daysScrollerRef.current?.scrollLeft || 0;
+            }}
+            onMouseLeave={() => { isDraggingRef.current = false; }}
+            onMouseUp={() => { isDraggingRef.current = false; }}
+            onMouseMove={(e) => {
+              if (!isDraggingRef.current || !daysScrollerRef.current) return;
+              e.preventDefault();
+              const x = e.pageX - daysScrollerRef.current.offsetLeft;
+              const walk = (x - dragStartXRef.current) * 1; // scroll speed
+              daysScrollerRef.current.scrollLeft = scrollLeftRef.current - walk;
+            }}
+            onTouchStart={(e) => {
+              isDraggingRef.current = true;
+              dragStartXRef.current = e.touches[0].pageX - (daysScrollerRef.current?.offsetLeft || 0);
+              scrollLeftRef.current = daysScrollerRef.current?.scrollLeft || 0;
+            }}
+            onTouchEnd={() => { isDraggingRef.current = false; }}
+            onTouchMove={(e) => {
+              if (!isDraggingRef.current || !daysScrollerRef.current) return;
+              const x = e.touches[0].pageX - daysScrollerRef.current.offsetLeft;
+              const walk = (x - dragStartXRef.current) * 1;
+              daysScrollerRef.current.scrollLeft = scrollLeftRef.current - walk;
+            }}
+          >
+            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+              const isToday = day === now.getDate() && now.getMonth() === monthStart.getMonth() && now.getFullYear() === monthStart.getFullYear();
+              const isActive = selectedDay === day;
+              return (
+                <Button
+                  key={day}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  className={isToday ? "border-primary" : undefined}
+                  onClick={() => setSelectedDay(day)}
+                >
+                  {day}
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Filter Panel */}
       {showFilters && (
         <Card className="overflow-visible">
@@ -457,7 +570,8 @@ export function CustomerOrdersTable({ onEditOrder }: CustomerOrdersTableProps) {
                 onClick={() => {
                   setPaymentTypeFilter('all');
                   setPaymentStatusFilter('all');
-                  setDateRange({});
+                  setSelectedDay('all');
+                  setDateRange({ from: monthStart, to: monthEnd });
                 }}
                 className="flex items-center gap-2"
               >
