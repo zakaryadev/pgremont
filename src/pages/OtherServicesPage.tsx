@@ -33,7 +33,11 @@ const OtherServicesPage = () => {
   const { toast } = useToast();
   const { saveOrder } = useCustomerOrders();
   const [activeMenu, setActiveMenu] = useState<number>(() => {
-    if (queryDebt === 'partial' || queryDebt === 'all') return 2; // Bizning Qarzlar
+    if (queryDebt === 'partial' || queryDebt === 'all') return 2; // Bizning Qarzlar (force from query)
+    try {
+      const stored = localStorage.getItem('otherServicesActiveTab');
+      if (stored !== null) return Number(stored);
+    } catch {}
     return 0; // Bosh sahifa (default)
   });
   const menuItems = ['Bosh sahifa', 'Kunlik rasxodlar', 'Bizning Qarzlar'];
@@ -213,7 +217,10 @@ const OtherServicesPage = () => {
                 return (
                   <button
                     key={item}
-                    onClick={() => setActiveMenu(idx)}
+                    onClick={() => {
+                      setActiveMenu(idx);
+                      try { localStorage.setItem('otherServicesActiveTab', String(idx)); } catch {}
+                    }}
                     className={`relative -mb-px px-3 py-2 text-sm font-medium transition-colors ${
                       isActive
                         ? 'text-primary border-b-2 border-primary'
@@ -229,129 +236,131 @@ const OtherServicesPage = () => {
 
           {/* Main content */}
           <div>
-              <div className="mb-4 flex justify-end">
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="flex items-center gap-2">
-                      <Save className="h-4 w-4" />
-                      Yangi buyurtma
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                      <DialogTitle>Mijoz ma'lumotlari va buyurtma boshqaruvi</DialogTitle>
-                      <DialogDescription>Yangi buyurtma ma'lumotlarini kiriting</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-6">
-                      {/* Customer Information */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">Mijoz ma'lumotlari</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="customerName">MIJOZ NOMI</Label>
-                            <Input
-                              id="customerName"
-                              value={formData.customerName}
-                              onChange={(e) => handleInputChange('customerName', e.target.value)}
-                              placeholder="Mijoz ismini kiriting"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="phoneNumber">TELEFON RAQAMI</Label>
-                            <Input
-                              id="phoneNumber"
-                              value={formData.phoneNumber}
-                              onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                              placeholder="+998 XX XXX XX XX"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      {/* Payment Information */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">To'lov ma'lumotlari</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="totalAmount">UMUMIY SUMMASI</Label>
-                            <NumericFormat
-                              id="totalAmount"
-                              value={formData.totalAmount}
-                              onValueChange={(values) => handleInputChange('totalAmount', values.value)}
-                              thousandSeparator=" "
-                              allowNegative={false}
-                              customInput={Input}
-                              placeholder="Umumiy summani kiriting"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="paymentType">TO'LOV TURI</Label>
-                            <Select value={formData.paymentType} onValueChange={(value) => handleInputChange('paymentType', value)}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="To'lov turini tanlang" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="cash">NAQD</SelectItem>
-                                <SelectItem value="click">CLICK</SelectItem>
-                                <SelectItem value="transfer">PERECHESLENIYA</SelectItem>
-                              </SelectContent>
-                            </Select>
+              {activeMenu === 0 && (
+                <div className="mb-4 flex justify-end">
+                  <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <Save className="h-4 w-4" />
+                        Yangi buyurtma
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle>Mijoz ma'lumotlari va buyurtma boshqaruvi</DialogTitle>
+                        <DialogDescription>Yangi buyurtma ma'lumotlarini kiriting</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-6">
+                        {/* Customer Information */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold">Mijoz ma'lumotlari</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="customerName">MIJOZ NOMI</Label>
+                              <Input
+                                id="customerName"
+                                value={formData.customerName}
+                                onChange={(e) => handleInputChange('customerName', e.target.value)}
+                                placeholder="Mijoz ismini kiriting"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="phoneNumber">TELEFON RAQAMI</Label>
+                              <Input
+                                id="phoneNumber"
+                                value={formData.phoneNumber}
+                                onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                                placeholder="+998 XX XXX XX XX"
+                              />
+                            </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="advancePayment">AVANS TO'LOV</Label>
-                            <NumericFormat
-                              id="advancePayment"
-                              value={formData.advancePayment}
-                              onValueChange={(values) => handleInputChange('advancePayment', values.value)}
-                              thousandSeparator=" "
-                              allowNegative={false}
-                              customInput={Input}
-                              placeholder="Avans to'lov miqdorini kiriting"
-                            />
+
+                        <Separator />
+
+                        {/* Payment Information */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold">To'lov ma'lumotlari</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="totalAmount">UMUMIY SUMMASI</Label>
+                              <NumericFormat
+                                id="totalAmount"
+                                value={formData.totalAmount}
+                                onValueChange={(values) => handleInputChange('totalAmount', values.value)}
+                                thousandSeparator=" "
+                                allowNegative={false}
+                                customInput={Input}
+                                placeholder="Umumiy summani kiriting"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="paymentType">TO'LOV TURI</Label>
+                              <Select value={formData.paymentType} onValueChange={(value) => handleInputChange('paymentType', value)}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="To'lov turini tanlang" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="cash">NAQD</SelectItem>
+                                  <SelectItem value="click">CLICK</SelectItem>
+                                  <SelectItem value="transfer">PERECHESLENIYA</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="remainingBalance">QOLDIQ</Label>
-                            <NumericFormat
-                              id="remainingBalance"
-                              value={formData.remainingBalance}
-                              thousandSeparator=" "
-                              customInput={Input}
-                              readOnly
-                              className={`font-medium ${
-                                parseInt(formData.remainingBalance) === 0 
-                                  ? 'bg-green-50 text-green-700' 
-                                  : 'bg-yellow-50 text-yellow-700'
-                              }`}
-                              placeholder="Qolgan summa"
-                            />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="advancePayment">AVANS TO'LOV</Label>
+                              <NumericFormat
+                                id="advancePayment"
+                                value={formData.advancePayment}
+                                onValueChange={(values) => handleInputChange('advancePayment', values.value)}
+                                thousandSeparator=" "
+                                allowNegative={false}
+                                customInput={Input}
+                                placeholder="Avans to'lov miqdorini kiriting"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="remainingBalance">QOLDIQ</Label>
+                              <NumericFormat
+                                id="remainingBalance"
+                                value={formData.remainingBalance}
+                                thousandSeparator=" "
+                                customInput={Input}
+                                readOnly
+                                className={`font-medium ${
+                                  parseInt(formData.remainingBalance) === 0 
+                                    ? 'bg-green-50 text-green-700' 
+                                    : 'bg-yellow-50 text-yellow-700'
+                                }`}
+                                placeholder="Qolgan summa"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <Separator />
+                        <Separator />
 
-                      {/* Action Buttons */}
-                      <div className="flex justify-end gap-4">
-                        <Button
-                          onClick={async () => {
-                            await handleSave();
-                            setIsFormOpen(false);
-                          }}
-                          disabled={isLoading}
-                          className="flex items-center gap-2"
-                        >
-                          <Save className="h-4 w-4" />
-                          {isLoading ? 'Saqlanmoqda...' : 'SAVE'}
-                        </Button>
+                        {/* Action Buttons */}
+                        <div className="flex justify-end gap-4">
+                          <Button
+                            onClick={async () => {
+                              await handleSave();
+                              setIsFormOpen(false);
+                            }}
+                            disabled={isLoading}
+                            className="flex items-center gap-2"
+                          >
+                            <Save className="h-4 w-4" />
+                            {isLoading ? 'Saqlanmoqda...' : 'SAVE'}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
 
               {/* Tab Content */}
               <div className="mt-6">
