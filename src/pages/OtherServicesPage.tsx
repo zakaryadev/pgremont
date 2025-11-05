@@ -32,6 +32,11 @@ const OtherServicesPage = () => {
   const wantDebtors = location.state?.showDebtors === true || queryDebt === 'partial' || queryDebt === 'all';
   const { toast } = useToast();
   const { saveOrder } = useCustomerOrders();
+  const quickCustomerNames = [
+    'Kimyo',
+    'Nodir aka (uztelecom)',
+    'Erkin aka',
+  ];
   const [activeMenu, setActiveMenu] = useState<number>(() => {
     if (queryDebt === 'partial' || queryDebt === 'all') return 2; // Bizning Qarzlar (force from query)
     try {
@@ -40,7 +45,7 @@ const OtherServicesPage = () => {
     } catch {}
     return 0; // Bosh sahifa (default)
   });
-  const menuItems = ['Bosh sahifa', 'Kunlik rasxodlar', 'Bizning Qarzlar'];
+  const menuItems = ['Bosh sahifa', 'Kunlik rasxodlar', 'Bizning Qarzlar', 'Qarzdorlar'];
   const [formData, setFormData] = useState<CustomerFormData>({
     customerName: '',
     phoneNumber: '',
@@ -257,6 +262,20 @@ const OtherServicesPage = () => {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label htmlFor="customerName">MIJOZ NOMI</Label>
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                {quickCustomerNames.map((n) => (
+                                  <Button
+                                    key={n}
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-full"
+                                    onClick={() => setFormData({ ...formData, customerName: n })}
+                                  >
+                                    {n}
+                                  </Button>
+                                ))}
+                              </div>
                               <Input
                                 id="customerName"
                                 value={formData.customerName}
@@ -382,6 +401,21 @@ const OtherServicesPage = () => {
                     </CardHeader>
                     <CardContent>
                       <DailyExpensesTable onlyWithDebt hideCreate />
+                    </CardContent>
+                  </Card>
+                )}
+                {activeMenu === 3 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Qarzdorlar (Buyurtmalar)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CustomerOrdersTable
+                        initialPaymentStatus="unpaid"
+                        initialShowFilters={true}
+                        initialPartialOnly={false}
+                        disableDefaultMonthRange={true}
+                      />
                     </CardContent>
                   </Card>
                 )}

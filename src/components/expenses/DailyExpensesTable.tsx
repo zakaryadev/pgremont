@@ -54,6 +54,9 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
   const { items, add, update, remove, loading, load } = useDailyExpenses();
   const { getPaymentRecords, savePaymentRecords, deletePaymentRecord } = useExpensePaymentRecords();
   const [query, setQuery] = useState('');
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<'all' | 'cash' | 'click' | 'transfer'>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [editing, setEditing] = useState<{
@@ -84,6 +87,8 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
     'Tornado',
     'Adxam aka',
     'Alyukabond',
+    'west like',
+    'fresh Print',
   ];
 
   const filtered = useMemo(() => {
@@ -92,9 +97,30 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
     if (onlyWithDebt) {
       base = base.filter((it) => it.remainingBalance > 0);
     }
-    if (!q) return base;
-    return base.filter((it) => it.name.toLowerCase().includes(q));
-  }, [items, query, onlyWithDebt]);
+    let res = base;
+    if (q) {
+      res = res.filter((it) => it.name.toLowerCase().includes(q));
+    }
+
+    // payment type filter
+    if (paymentTypeFilter !== 'all') {
+      res = res.filter((it) => it.paymentType === paymentTypeFilter);
+    }
+
+    // date range filter
+    if (startDate || endDate) {
+      const from = startDate ? new Date(startDate) : null;
+      const to = endDate ? new Date(endDate) : null;
+      res = res.filter((it) => {
+        const d = it.createdAt;
+        const afterFrom = !from || d >= new Date(from.getFullYear(), from.getMonth(), from.getDate());
+        const beforeTo = !to || d <= new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59, 999);
+        return afterFrom && beforeTo;
+      });
+    }
+
+    return res;
+  }, [items, query, onlyWithDebt, paymentTypeFilter, startDate, endDate]);
 
   const startCreate = () => {
     setEditing({
@@ -312,7 +338,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+      <div className="flex flex-col gap-3 mb-4">
         <div className="relative w-full md:max-w-sm">
           <Input
             value={query}
@@ -322,13 +348,45 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
           />
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         </div>
-        {!hideCreate && (
-          <div className="ml-auto">
-            <Button onClick={startCreate} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Rasxod qo‘shish
-            </Button>
+        <div className="overflow-x-auto">
+          <div className="min-w-max flex flex-col md:flex-row md:items-end gap-3">
+          <div className="w-full md:w-52">
+            <Label className="text-xs">To'lov turi</Label>
+            <Select value={paymentTypeFilter} onValueChange={(v: any) => setPaymentTypeFilter(v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Barchasi" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Barchasi</SelectItem>
+                <SelectItem value="cash">NAQD</SelectItem>
+                <SelectItem value="click">CLICK</SelectItem>
+                <SelectItem value="transfer">PERECHESLENIYE</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        )}
+          <div className="w-full md:w-44">
+            <Label className="text-xs">Boshlanish sanasi</Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+          <div className="w-full md:w-44">
+            <Label className="text-xs">Tugash sanasi</Label>
+            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { const t=new Date(); const s=new Date(t.getFullYear(), t.getMonth(), t.getDate()); setStartDate(s.toISOString().split('T')[0]); setEndDate(s.toISOString().split('T')[0]); }}>Bugun</Button>
+            <Button variant="outline" onClick={() => { const t=new Date(); const s=new Date(); s.setDate(t.getDate()-7); setStartDate(s.toISOString().split('T')[0]); setEndDate(t.toISOString().split('T')[0]); }}>7 kun</Button>
+            <Button variant="outline" onClick={() => { const t=new Date(); const s=new Date(); s.setMonth(t.getMonth()-1); setStartDate(s.toISOString().split('T')[0]); setEndDate(t.toISOString().split('T')[0]); }}>1 oy</Button>
+            <Button variant="ghost" onClick={() => { setStartDate(''); setEndDate(''); setPaymentTypeFilter('all'); }}>Tozalash</Button>
+          </div>
+          {!hideCreate && (
+            <div className="md:ml-auto">
+              <Button onClick={startCreate} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" /> Rasxod qo‘shish
+              </Button>
+            </div>
+          )}
+          </div>
+        </div>
       </div>
 
       <div className="border rounded-md">
@@ -424,7 +482,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
             <div className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="exp-name">Rasxod nomi</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
+                <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
                   {quickExpenseNames.map((label) => (
                     <Button
                       key={label}
@@ -432,7 +490,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
                       variant="outline"
                       size="sm"
                       onClick={() => setEditing({ ...editing, name: label })}
-                      className="rounded-full"
+                      className="rounded-full h-7 px-3 text-xs whitespace-nowrap"
                     >
                       {label}
                     </Button>
