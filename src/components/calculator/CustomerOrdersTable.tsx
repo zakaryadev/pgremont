@@ -47,6 +47,7 @@ import {
   Play,
   SlidersHorizontal,
   Calendar as CalendarIcon2,
+  Download,
 } from "lucide-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CustomerOrder, useCustomerOrders } from "@/hooks/useCustomerOrders";
@@ -55,6 +56,7 @@ import { EditCustomerOrderModal } from "./EditCustomerOrderModal";
 import { PaymentRecordModal } from "./PaymentRecordModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import * as XLSX from 'xlsx';
 
 interface CustomerOrdersTableProps {
   onEditOrder?: (order: CustomerOrder) => void;
@@ -291,6 +293,62 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
     setSearchQuery("");
   };
 
+  // Calculate totals for filtered orders
+  const totals = useMemo(() => {
+    return filteredOrders.reduce((acc, order) => {
+      acc.totalAmount += order.totalAmount;
+      acc.advancePayment += order.advancePayment;
+      acc.remainingBalance += order.remainingBalance;
+      return acc;
+    }, { totalAmount: 0, advancePayment: 0, remainingBalance: 0 });
+  }, [filteredOrders]);
+
+  const handleExportToExcel = () => {
+    try {
+      const data = filteredOrders.map((order) => ({
+        'Mijoz nomi': order.customerName,
+        'Telefon': order.phoneNumber || '',
+        'Jami summa': order.totalAmount,
+        'To\'lov turi': getPaymentTypeLabel(order.paymentType),
+        'Avans': order.advancePayment,
+        'Qoldiq': order.remainingBalance,
+        'Sana': formatDate(order.createdAt),
+        'ID': order.id,
+      }));
+
+      // Jami qator qo'shish
+      const totalsRow = {
+        'Mijoz nomi': 'JAMI',
+        'Telefon': '',
+        'Jami summa': totals.totalAmount,
+        'To\'lov turi': '',
+        'Avans': totals.advancePayment,
+        'Qoldiq': totals.remainingBalance,
+        'Sana': '',
+        'ID': '',
+      };
+
+      const ws = XLSX.utils.json_to_sheet([...data, totalsRow]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Buyurtmalar');
+
+      // Fayl nomi
+      const fileName = `buyurtmalar_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      toast({ 
+        title: 'Muvaffaqiyatli', 
+        description: 'Excel fayli yuklab olindi' 
+      });
+    } catch (e: any) {
+      toast({ 
+        title: 'Xatolik', 
+        description: e?.message || 'Excel faylini yaratishda xatolik', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
   // Auto refresh every 3 seconds
   useEffect(() => {
     if (!autoRefreshEnabled) return;
@@ -362,6 +420,16 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
                 >
                   <RefreshCw className="h-4 w-4" />
                   Yangilash
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportToExcel}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Excel
                 </Button>
 
                 <Button

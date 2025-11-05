@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { NumericFormat } from 'react-number-format';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Search, Calendar, History } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Calendar, History, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useDailyExpenses, DailyExpense } from '@/hooks/useDailyExpenses';
 import { useExpensePaymentRecords } from '@/hooks/useExpensePaymentRecords';
 import { supabase } from '@/integrations/supabase/client';
@@ -121,6 +122,15 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
 
     return res;
   }, [items, query, onlyWithDebt, paymentTypeFilter, startDate, endDate]);
+
+  const totals = useMemo(() => {
+    return filtered.reduce((acc, item) => {
+      acc.totalAmount += item.totalAmount;
+      acc.advancePayment += item.advancePayment;
+      acc.remainingBalance += item.remainingBalance;
+      return acc;
+    }, { totalAmount: 0, advancePayment: 0, remainingBalance: 0 });
+  }, [filtered]);
 
   const startCreate = () => {
     setEditing({
@@ -336,6 +346,43 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
     }
   };
 
+  const handleExportToExcel = () => {
+    try {
+      const data = filtered.map((row) => ({
+        'Rasxod nomi': row.name,
+        'Tavsif': (row as any).description || '',
+        'Jami summa': row.totalAmount,
+        'To\'lov turi': getPaymentTypeLabel(row.paymentType),
+        'Avans': row.advancePayment,
+        'Qoldiq': row.remainingBalance,
+        'Sana': formatDate(row.createdAt),
+      }));
+
+      // Jami qator qo'shish
+      const totalsRow = {
+        'Rasxod nomi': 'JAMI',
+        'Tavsif': '',
+        'Jami summa': totals.totalAmount,
+        'To\'lov turi': '',
+        'Avans': totals.advancePayment,
+        'Qoldiq': totals.remainingBalance,
+        'Sana': '',
+      };
+
+      const ws = XLSX.utils.json_to_sheet([...data, totalsRow]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Rasxodlar');
+
+      // Fayl nomi
+      const fileName = `rasxodlar_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      toast({ title: 'Muvaffaqiyatli', description: 'Excel fayli yuklab olindi' });
+    } catch (e: any) {
+      toast({ title: 'Xatolik', description: e?.message || 'Excel faylini yaratishda xatolik', variant: 'destructive' });
+    }
+  };
+
   return (
     <div>
       <div className="flex flex-col gap-3 mb-4">
@@ -378,35 +425,46 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
             <Button variant="outline" onClick={() => { const t=new Date(); const s=new Date(); s.setMonth(t.getMonth()-1); setStartDate(s.toISOString().split('T')[0]); setEndDate(t.toISOString().split('T')[0]); }}>1 oy</Button>
             <Button variant="ghost" onClick={() => { setStartDate(''); setEndDate(''); setPaymentTypeFilter('all'); }}>Tozalash</Button>
           </div>
-          {!hideCreate && (
-            <div className="md:ml-auto">
+          <div className="md:ml-auto flex gap-2">
+            <Button variant="outline" onClick={handleExportToExcel} className="flex items-center gap-2">
+              <Download className="h-4 w-4" /> Excel
+            </Button>
+            {!hideCreate && (
               <Button onClick={startCreate} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" /> Rasxod qo‘shish
               </Button>
-            </div>
-          )}
+            )}
+          </div>
           </div>
         </div>
       </div>
 
-      <div className="border rounded-md">
-        <Table>
+      <div className="border rounded-md overflow-x-auto">
+        <Table className="min-w-full">
           <TableHeader>
             <TableRow>
-              <TableHead>Rasxod nomi</TableHead>
-              <TableHead>Tavsif</TableHead>
-              <TableHead className="text-right">Jami summa</TableHead>
-              <TableHead className="text-center">To'lov turi</TableHead>
-              <TableHead className="text-right">Avans</TableHead>
-              <TableHead className="text-right">Qoldiq</TableHead>
-              <TableHead className="text-center">Sana</TableHead>
-              <TableHead className="w-[110px] text-right">Amallar</TableHead>
+              <TableHead className="whitespace-nowrap">Rasxod nomi</TableHead>
+              <TableHead className="whitespace-nowrap">Tavsif</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Jami summa</TableHead>
+              <TableHead className="text-center whitespace-nowrap">To'lov turi</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Avans</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Qoldiq</TableHead>
+              <TableHead className="text-center whitespace-nowrap">Sana</TableHead>
+              <TableHead className="w-[110px] text-right whitespace-nowrap">Amallar</TableHead>
+            </TableRow>
+            <TableRow className="bg-muted/50 font-semibold">
+              <TableHead colSpan={2} className="text-right whitespace-nowrap">JAMI:</TableHead>
+              <TableHead className="text-right whitespace-nowrap">{formatCurrency(totals.totalAmount)}</TableHead>
+              <TableHead className="whitespace-nowrap"></TableHead>
+              <TableHead className="text-right whitespace-nowrap">{formatCurrency(totals.advancePayment)}</TableHead>
+              <TableHead className="text-right whitespace-nowrap">{formatCurrency(totals.remainingBalance)}</TableHead>
+              <TableHead colSpan={2} className="whitespace-nowrap"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((row) => (
               <TableRow key={row.id}>
-                <TableCell className="font-medium">{row.name}</TableCell>
+                <TableCell className="font-medium whitespace-normal break-words max-w-[150px] md:max-w-[250px]">{row.name}</TableCell>
                 <TableCell className="max-w-[220px] truncate" title={(row as any).description || ''}>
                   {(row as any).description ? (row as any).description : <span className="text-muted-foreground">-</span>}
                 </TableCell>
@@ -463,8 +521,18 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
             {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} className="text-center text-muted-foreground">
-                  {loading ? 'Yuklanmoqda...' : 'Ma’lumot topilmadi'}
+                  {loading ? 'Yuklanmoqda...' : "Ma'lumot topilmadi"}
                 </TableCell>
+              </TableRow>
+            )}
+            {filtered.length > 0 && (
+              <TableRow className="bg-muted/50 font-semibold">
+                <TableCell colSpan={2} className="text-right font-semibold whitespace-nowrap">JAMI:</TableCell>
+                <TableCell className="text-right font-semibold whitespace-nowrap">{formatCurrency(totals.totalAmount)}</TableCell>
+                <TableCell className="whitespace-nowrap"></TableCell>
+                <TableCell className="text-right font-semibold whitespace-nowrap">{formatCurrency(totals.advancePayment)}</TableCell>
+                <TableCell className="text-right font-semibold whitespace-nowrap">{formatCurrency(totals.remainingBalance)}</TableCell>
+                <TableCell colSpan={2} className="whitespace-nowrap"></TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -482,7 +550,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
             <div className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="exp-name">Rasxod nomi</Label>
-                <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
+                <div className="flex flex-wrap gap-2 mb-2 max-w-full">
                   {quickExpenseNames.map((label) => (
                     <Button
                       key={label}
