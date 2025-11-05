@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface DailyExpense {
   id: string;
   name: string;
+  description?: string;
   totalAmount: number;
   paymentType: 'cash' | 'click' | 'transfer';
   advancePayment: number;
@@ -51,6 +52,7 @@ export function useDailyExpenses() {
         return {
           id: r.id,
           name: r.name,
+          description: r.description || '',
           totalAmount,
           paymentType: r.payment_type || 'cash',
           advancePayment: originalAdvance,
@@ -73,6 +75,7 @@ export function useDailyExpenses() {
 
   const add = useCallback(async (payload: {
     name: string;
+    description?: string;
     totalAmount: number;
     paymentType: 'cash' | 'click' | 'transfer';
     advancePayment: number;
@@ -82,6 +85,7 @@ export function useDailyExpenses() {
     const insertBody: any = {
       user_id: null, // Custom auth doesn't use Supabase auth, so user_id is null
       name: payload.name,
+      description: payload.description ?? null,
       amount: payload.totalAmount,
       payment_type: payload.paymentType,
       advance_payment: payload.advancePayment,
@@ -119,6 +123,7 @@ export function useDailyExpenses() {
     const mapped: DailyExpense = {
       id: data.id,
       name: data.name,
+      description: (data as any).description || '',
       totalAmount: parseFloat(data.amount),
       paymentType: data.payment_type,
       advancePayment: parseFloat(data.advance_payment),
@@ -132,12 +137,14 @@ export function useDailyExpenses() {
 
   const update = useCallback(async (id: string, payload: Partial<{
     name: string;
+    description?: string;
     totalAmount: number;
     paymentType: 'cash' | 'click' | 'transfer';
     advancePayment: number;
   }>) => {
     const updateBody: any = {};
     if (payload.name !== undefined) updateBody.name = payload.name;
+    if (payload.description !== undefined) updateBody.description = payload.description;
     if (payload.totalAmount !== undefined) updateBody.amount = payload.totalAmount;
     if (payload.paymentType !== undefined) updateBody.payment_type = payload.paymentType;
     if (payload.advancePayment !== undefined) updateBody.advance_payment = payload.advancePayment;
@@ -164,6 +171,7 @@ export function useDailyExpenses() {
     const mapped: DailyExpense = {
       id: row.id,
       name: row.name,
+      description: row.description || '',
       totalAmount: parseFloat(row.amount),
       paymentType: row.payment_type,
       advancePayment: parseFloat(row.advance_payment),

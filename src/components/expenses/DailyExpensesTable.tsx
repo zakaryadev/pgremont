@@ -59,6 +59,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
   const [editing, setEditing] = useState<{
     id?: string;
     name: string;
+    description?: string;
     totalAmount: string;
     paymentType: 'cash' | 'click' | 'transfer';
     advancePayment: string;
@@ -71,6 +72,19 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
     paymentType: 'cash' as 'cash' | 'click' | 'transfer',
     paymentDate: new Date().toISOString().split('T')[0],
   });
+
+  const quickExpenseNames = [
+    'Ibrohim',
+    'Yandex',
+    'Akril Fomaks',
+    'Banner Orakal',
+    'Konstovar',
+    'Oybek aka',
+    'Yi long',
+    'Tornado',
+    'Adxam aka',
+    'Alyukabond',
+  ];
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -85,6 +99,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
   const startCreate = () => {
     setEditing({
       name: '',
+      description: '',
       totalAmount: '',
       paymentType: 'cash',
       advancePayment: '',
@@ -96,6 +111,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
     setEditing({
       id: row.id,
       name: row.name,
+      description: (row as any).description || '',
       totalAmount: row.totalAmount.toString(),
       paymentType: row.paymentType,
       advancePayment: row.advancePayment.toString(),
@@ -114,7 +130,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
 
   const save = async () => {
     if (!editing) return;
-    const { name, totalAmount, paymentType, advancePayment } = editing;
+    const { name, description, totalAmount, paymentType, advancePayment } = editing;
     
     if (!name.trim()) {
       toast({ title: 'Xatolik', description: "Rasxod nomi kerak", variant: 'destructive' });
@@ -138,6 +154,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
       if (editing.id) {
         await update(editing.id, {
           name,
+          description: description?.trim() || '',
           totalAmount: total,
           paymentType,
           advancePayment: advance,
@@ -146,6 +163,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
       } else {
         await add({
           name,
+          description: description?.trim() || '',
           totalAmount: total,
           paymentType,
           advancePayment: advance,
@@ -318,6 +336,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
           <TableHeader>
             <TableRow>
               <TableHead>Rasxod nomi</TableHead>
+              <TableHead>Tavsif</TableHead>
               <TableHead className="text-right">Jami summa</TableHead>
               <TableHead className="text-center">To'lov turi</TableHead>
               <TableHead className="text-right">Avans</TableHead>
@@ -330,6 +349,9 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
             {filtered.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="font-medium">{row.name}</TableCell>
+                <TableCell className="max-w-[220px] truncate" title={(row as any).description || ''}>
+                  {(row as any).description ? (row as any).description : <span className="text-muted-foreground">-</span>}
+                </TableCell>
                 <TableCell className="text-right">{formatCurrency(row.totalAmount)}</TableCell>
                 <TableCell className="text-center">
                   <Badge className={getPaymentTypeColor(row.paymentType)}>
@@ -382,7 +404,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
                   {loading ? 'Yuklanmoqda...' : 'Ma’lumot topilmadi'}
                 </TableCell>
               </TableRow>
@@ -402,11 +424,34 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
             <div className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="exp-name">Rasxod nomi</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {quickExpenseNames.map((label) => (
+                    <Button
+                      key={label}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditing({ ...editing, name: label })}
+                      className="rounded-full"
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
                 <Input
                   id="exp-name"
                   value={editing.name}
                   onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                   placeholder="Masalan: Taksi, Kantselyariya ..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="exp-desc">Tavsif (ixtiyoriy)</Label>
+                <Input
+                  id="exp-desc"
+                  value={editing.description || ''}
+                  onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                  placeholder="Qo'shimcha izoh"
                 />
               </div>
               <Separator />
