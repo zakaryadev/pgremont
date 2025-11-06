@@ -119,6 +119,7 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
         (order) =>
           order.customerName.toLowerCase().includes(query) ||
           order.phoneNumber?.toLowerCase().includes(query) ||
+          order.description?.toLowerCase().includes(query) ||
           order.paymentType.toLowerCase().includes(query) ||
           order.id.toLowerCase().includes(query)
       );
@@ -308,6 +309,7 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
       const data = filteredOrders.map((order) => ({
         'Mijoz nomi': order.customerName,
         'Telefon': order.phoneNumber || '',
+        'Tavsif': order.description || '',
         'Jami summa': order.totalAmount,
         'To\'lov turi': getPaymentTypeLabel(order.paymentType),
         'Avans': order.advancePayment,
@@ -320,6 +322,7 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
       const totalsRow = {
         'Mijoz nomi': 'JAMI',
         'Telefon': '',
+        'Tavsif': '',
         'Jami summa': totals.totalAmount,
         'To\'lov turi': '',
         'Avans': totals.advancePayment,
@@ -712,13 +715,25 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
                 <TableHeader>
                   <TableRow>
                     <TableHead>Mijoz</TableHead>
+                    <TableHead>Tavsif</TableHead>
                     <TableHead className="hidden sm:table-cell">Telefon</TableHead>
                     <TableHead>Jami summa</TableHead>
                     <TableHead>To'lov turi</TableHead>
-                      <TableHead className="hidden sm:table-cell">Avans</TableHead>
+                    <TableHead className="hidden sm:table-cell">Avans</TableHead>
                     <TableHead>Qoldiq</TableHead>
-                      <TableHead className="hidden sm:table-cell">Sana</TableHead>
+                    <TableHead className="hidden sm:table-cell">Sana</TableHead>
                     <TableHead className="text-right">Amallar</TableHead>
+                  </TableRow>
+                  <TableRow className="bg-blue-500 text-white">
+                    <TableHead className="text-xs text-white uppercase">Jami</TableHead>
+                    <TableHead></TableHead>
+                    <TableHead className="hidden sm:table-cell"></TableHead>
+                    <TableHead className="font-semibold text-white whitespace-nowrap">{formatCurrency(totals.totalAmount)}</TableHead>
+                    <TableHead></TableHead>
+                    <TableHead className="hidden sm:table-cell text-white font-medium">{formatCurrency(totals.advancePayment)}</TableHead>
+                    <TableHead className="text-white font-medium">{formatCurrency(totals.remainingBalance)}</TableHead>
+                    <TableHead className="hidden sm:table-cell"></TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -732,6 +747,13 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
                           <div className="w-2 h-2 bg-primary rounded-full"></div>
                           {order.customerName}
                         </div>
+                      </TableCell>
+                      <TableCell className="truncate max-w-[220px] align-top">
+                        {order.description ? (
+                          <span title={order.description}>{order.description}</span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         {order.phoneNumber ? (
@@ -838,6 +860,18 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
                       </TableCell>
                     </TableRow>
                   ))}
+                  {/* Footer totals row */}
+                  <TableRow className="bg-blue-100">
+                    <TableCell className="font-semibold">JAMI</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="hidden sm:table-cell"></TableCell>
+                    <TableCell className="font-semibold text-primary whitespace-nowrap">{formatCurrency(totals.totalAmount)}</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="hidden sm:table-cell text-green-700 font-medium">{formatCurrency(totals.advancePayment)}</TableCell>
+                    <TableCell className="text-orange-700 font-medium">{formatCurrency(totals.remainingBalance)}</TableCell>
+                    <TableCell className="hidden sm:table-cell"></TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
                 </TableBody>
                 </Table>
               </div>
@@ -872,6 +906,13 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
                   <Label className="text-sm font-medium">Telefon raqami</Label>
                   <p className="text-sm">
                     {selectedOrder.phoneNumber || "Kiritilmagan"}
+                  </p>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-sm font-medium">Tavsif</Label>
+                  <p className="text-sm break-words">
+                    {selectedOrder.description || "Kiritilmagan"}
                   </p>
                 </div>
 

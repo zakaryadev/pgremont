@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
@@ -17,6 +18,7 @@ import { DailyExpensesTable } from '@/components/expenses/DailyExpensesTable';
 interface CustomerFormData {
   customerName: string;
   phoneNumber: string;
+  description?: string;
   totalAmount: string;
   paymentType: string;
   advancePayment: string;
@@ -49,6 +51,7 @@ const OtherServicesPage = () => {
   const [formData, setFormData] = useState<CustomerFormData>({
     customerName: '',
     phoneNumber: '',
+    description: '',
     totalAmount: '',
     paymentType: '',
     advancePayment: '0', // Always 0 for new orders
@@ -156,7 +159,8 @@ const OtherServicesPage = () => {
         parseFloat(formData.totalAmount),
         formData.paymentType as 'cash' | 'click' | 'transfer',
         parseFloat(formData.advancePayment) || 0,
-        parseFloat(formData.remainingBalance) || 0
+        parseFloat(formData.remainingBalance) || 0,
+        formData.description || undefined
       );
       
       toast({
@@ -168,6 +172,7 @@ const OtherServicesPage = () => {
       setFormData({
         customerName: '',
         phoneNumber: '',
+        description: '',
         totalAmount: '',
         paymentType: '',
         advancePayment: '0',
@@ -292,6 +297,16 @@ const OtherServicesPage = () => {
                                 placeholder="+998 XX XXX XX XX"
                               />
                             </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="description">TAVSIF (ixtiyoriy)</Label>
+                            <Textarea
+                              id="description"
+                              value={formData.description}
+                              onChange={(e) => handleInputChange('description', e.target.value)}
+                              placeholder="Masalan: ish tafsilotlari"
+                              rows={3}
+                            />
                           </div>
                         </div>
 

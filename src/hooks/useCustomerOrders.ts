@@ -5,6 +5,7 @@ export interface CustomerOrder {
   id: string;
   customerName: string;
   phoneNumber?: string;
+  description?: string;
   totalAmount: number;
   paymentType: "cash" | "click" | "transfer";
   advancePayment: number;
@@ -61,6 +62,7 @@ export function useCustomerOrders() {
             id: order.id,
             customerName: order.customer_name,
             phoneNumber: order.phone_number || undefined,
+            description: order.description || undefined,
             totalAmount,
             paymentType: order.payment_type,
             advancePayment: originalAdvance,
@@ -92,7 +94,8 @@ export function useCustomerOrders() {
       totalAmount: number,
       paymentType: "cash" | "click" | "transfer",
       advancePayment: number,
-      remainingBalance: number
+      remainingBalance: number,
+      description?: string
     ) => {
       try {
         const calculatedRemaining = Math.max(0, totalAmount - advancePayment);
@@ -100,6 +103,7 @@ export function useCustomerOrders() {
         const orderData = {
           customer_name: customerName,
           phone_number: phoneNumber || null,
+          description: description || null,
           total_amount: totalAmount,
           payment_type: paymentType,
           advance_payment: advancePayment,
@@ -156,6 +160,7 @@ export function useCustomerOrders() {
           id: data.id,
           customerName: data.customer_name,
           phoneNumber: data.phone_number || undefined,
+          description: data.description || undefined,
           totalAmount: parseFloat(data.total_amount),
           paymentType: data.payment_type,
           advancePayment: parseFloat(data.advance_payment),
@@ -210,6 +215,7 @@ export function useCustomerOrders() {
           .update({
             customer_name: updatedData.customerName,
             phone_number: updatedData.phoneNumber || null,
+            description: (updatedData.description ?? null) as any,
             total_amount: updatedData.totalAmount,
             payment_type: updatedData.paymentType,
             advance_payment: updatedData.advancePayment,
@@ -231,6 +237,7 @@ export function useCustomerOrders() {
           id: data.id,
           customerName: data.customer_name,
           phoneNumber: data.phone_number || undefined,
+          description: data.description || undefined,
           totalAmount: parseFloat(data.total_amount),
           paymentType: data.payment_type,
           advancePayment: parseFloat(data.advance_payment),

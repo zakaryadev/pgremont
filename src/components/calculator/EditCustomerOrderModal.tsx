@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
@@ -21,6 +22,7 @@ export function EditCustomerOrderModal({ order, isOpen, onClose, onSave }: EditC
   const [formData, setFormData] = useState({
     customerName: '',
     phoneNumber: '',
+    description: '',
     totalAmount: '',
     paymentType: '',
     advancePayment: '',
@@ -33,6 +35,7 @@ export function EditCustomerOrderModal({ order, isOpen, onClose, onSave }: EditC
       setFormData({
         customerName: order.customerName,
         phoneNumber: order.phoneNumber || '',
+        description: order.description || '',
         totalAmount: order.totalAmount.toString(),
         paymentType: order.paymentType,
         advancePayment: order.advancePayment.toString(),
@@ -94,6 +97,7 @@ export function EditCustomerOrderModal({ order, isOpen, onClose, onSave }: EditC
       const updatedOrder = {
         customerName: formData.customerName,
         phoneNumber: formData.phoneNumber || undefined,
+        description: formData.description || undefined,
         totalAmount: parseFloat(formData.totalAmount),
         paymentType: formData.paymentType as 'cash' | 'click' | 'transfer',
         advancePayment: parseFloat(formData.advancePayment) || 0,
@@ -157,6 +161,17 @@ export function EditCustomerOrderModal({ order, isOpen, onClose, onSave }: EditC
                 />
               </div>
             </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-description">TAVSIF (ixtiyoriy)</Label>
+            <Textarea
+              id="edit-description"
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              placeholder="Masalan: ish tafsilotlari"
+              rows={3}
+            />
+          </div>
           </div>
 
           <Separator />

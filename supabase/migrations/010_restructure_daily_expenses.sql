@@ -91,3 +91,4 @@ WHERE (COALESCE(cash, 0) + COALESCE(click, 0) + COALESCE(transfer, 0)) > 0;
 
 
 
+
