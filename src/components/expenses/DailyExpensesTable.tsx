@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,11 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { NumericFormat } from 'react-number-format';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Search, Calendar, History, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Calendar, History, Download, Calendar as CalendarIcon2, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useDailyExpenses, DailyExpense } from '@/hooks/useDailyExpenses';
 import { useExpensePaymentRecords } from '@/hooks/useExpensePaymentRecords';
 import { supabase } from '@/integrations/supabase/client';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { uz } from 'date-fns/locale';
 
 interface DailyExpensesTableProps {
   onlyWithDebt?: boolean;
@@ -77,6 +82,15 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
     paymentDate: new Date().toISOString().split('T')[0],
   });
 
+  // UI states like on Home page
+  const [showFilters, setShowFilters] = useState(false);
+  const [currentMonthDate, setCurrentMonthDate] = useState<Date>(new Date());
+  const [selectedDay, setSelectedDay] = useState<number | 'all'>('all');
+  const daysScrollerRef = useRef<HTMLDivElement | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+
   const quickExpenseNames = [
     'Ibrohim',
     'Yandex',
@@ -91,6 +105,19 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
     'west like',
     'fresh Print',
   ];
+
+  // Month/day navigation like Home page
+  const now = new Date();
+  const monthStart = useMemo(() => new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth(), 1), [currentMonthDate]);
+  const monthEnd = useMemo(() => new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 0), [currentMonthDate]);
+  const daysInMonth = monthEnd.getDate();
+
+  // Keep date range synced with selected month; reset day filter on month change
+  useEffect(() => {
+    setStartDate(monthStart.toISOString().split('T')[0]);
+    setEndDate(monthEnd.toISOString().split('T')[0]);
+    setSelectedDay('all');
+  }, [monthStart, monthEnd]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -120,8 +147,20 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
       });
     }
 
+    // selected day within current month
+    if (selectedDay !== 'all') {
+      res = res.filter((it) => {
+        const d = it.createdAt;
+        return (
+          d.getDate() === selectedDay &&
+          d.getMonth() === monthStart.getMonth() &&
+          d.getFullYear() === monthStart.getFullYear()
+        );
+      });
+    }
+
     return res;
-  }, [items, query, onlyWithDebt, paymentTypeFilter, startDate, endDate]);
+  }, [items, query, onlyWithDebt, paymentTypeFilter, startDate, endDate, selectedDay, monthStart]);
 
   const totals = useMemo(() => {
     return filtered.reduce((acc, item) => {
@@ -386,15 +425,37 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
   return (
     <div>
       <div className="flex flex-col gap-3 mb-4">
-        <div className="relative w-full md:max-w-sm">
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Qidirish (rasxod nomi)"
-            className="pl-8"
-          />
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="relative w-full md:max-w-sm">
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Qidirish (rasxod nomi)"
+              className="pl-8"
+            />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="flex items-center gap-2 md:ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters((v) => !v)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filtrlash
+            </Button>
+            <Button variant="outline" onClick={handleExportToExcel} className="flex items-center gap-2">
+              <Download className="h-4 w-4" /> Excel
+            </Button>
+            {!hideCreate && (
+              <Button onClick={startCreate} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" /> Rasxod qo‘shish
+              </Button>
+            )}
+          </div>
         </div>
+        {showFilters && (
         <div className="overflow-x-auto">
           <div className="min-w-max flex flex-col md:flex-row md:items-end gap-3">
           <div className="w-full md:w-52">
@@ -411,31 +472,155 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
               </SelectContent>
             </Select>
           </div>
-          <div className="w-full md:w-44">
+          <div className="w-full md:w-60">
             <Label className="text-xs">Boshlanish sanasi</Label>
-            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon2 className="mr-2 h-4 w-4" />
+                  {startDate ? (
+                    new Date(startDate).toLocaleDateString('uz-UZ')
+                  ) : (
+                    <span>Sanani tanlang</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={startDate ? new Date(startDate) : undefined}
+                  onSelect={(date) => setStartDate(date ? date.toISOString().split('T')[0] : '')}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
-          <div className="w-full md:w-44">
+          <div className="w-full md:w-60">
             <Label className="text-xs">Tugash sanasi</Label>
-            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon2 className="mr-2 h-4 w-4" />
+                  {endDate ? (
+                    new Date(endDate).toLocaleDateString('uz-UZ')
+                  ) : (
+                    <span>Sanani tanlang</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={endDate ? new Date(endDate) : undefined}
+                  onSelect={(date) => setEndDate(date ? date.toISOString().split('T')[0] : '')}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-end">
             <Button variant="outline" onClick={() => { const t=new Date(); const s=new Date(t.getFullYear(), t.getMonth(), t.getDate()); setStartDate(s.toISOString().split('T')[0]); setEndDate(s.toISOString().split('T')[0]); }}>Bugun</Button>
             <Button variant="outline" onClick={() => { const t=new Date(); const s=new Date(); s.setDate(t.getDate()-7); setStartDate(s.toISOString().split('T')[0]); setEndDate(t.toISOString().split('T')[0]); }}>7 kun</Button>
             <Button variant="outline" onClick={() => { const t=new Date(); const s=new Date(); s.setMonth(t.getMonth()-1); setStartDate(s.toISOString().split('T')[0]); setEndDate(t.toISOString().split('T')[0]); }}>1 oy</Button>
-            <Button variant="ghost" onClick={() => { setStartDate(''); setEndDate(''); setPaymentTypeFilter('all'); }}>Tozalash</Button>
+            <Button variant="outline" onClick={() => { setStartDate(''); setEndDate(''); setPaymentTypeFilter('all'); }}>Filtrlarni tozalash</Button>
           </div>
-          <div className="md:ml-auto flex gap-2">
-            <Button variant="outline" onClick={handleExportToExcel} className="flex items-center gap-2">
-              <Download className="h-4 w-4" /> Excel
+          <div className="md:ml-auto flex gap-2"></div>
+          </div>
+        </div>
+        )}
+      </div>
+
+      {/* Month navigator + day selector */}
+      <div className="border rounded-md mb-4">
+        <div className="flex items-center justify-between p-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+              title="Oldingi oy"
+            >
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            {!hideCreate && (
-              <Button onClick={startCreate} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" /> Rasxod qo‘shish
+            <div className="text-sm text-muted-foreground min-w-[140px] text-center">
+              {format(monthStart, 'LLLL yyyy', { locale: uz })}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+              title="Keyingi oy"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={selectedDay === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedDay('all')}
+            >
+              Barcha kunlar
+            </Button>
+          </div>
+        </div>
+        <div
+          ref={daysScrollerRef}
+          className="flex gap-2 px-3 pb-3 overflow-x-auto select-none cursor-grab active:cursor-grabbing"
+          onMouseDown={(e) => {
+            isDraggingRef.current = true;
+            dragStartXRef.current = e.pageX - (daysScrollerRef.current?.offsetLeft || 0);
+            scrollLeftRef.current = daysScrollerRef.current?.scrollLeft || 0;
+          }}
+          onMouseLeave={() => { isDraggingRef.current = false; }}
+          onMouseUp={() => { isDraggingRef.current = false; }}
+          onMouseMove={(e) => {
+            if (!isDraggingRef.current || !daysScrollerRef.current) return;
+            e.preventDefault();
+            const x = e.pageX - daysScrollerRef.current.offsetLeft;
+            const walk = (x - dragStartXRef.current) * 1;
+            daysScrollerRef.current.scrollLeft = scrollLeftRef.current - walk;
+          }}
+          onTouchStart={(e) => {
+            isDraggingRef.current = true;
+            dragStartXRef.current = e.touches[0].pageX - (daysScrollerRef.current?.offsetLeft || 0);
+            scrollLeftRef.current = daysScrollerRef.current?.scrollLeft || 0;
+          }}
+          onTouchEnd={() => { isDraggingRef.current = false; }}
+          onTouchMove={(e) => {
+            if (!isDraggingRef.current || !daysScrollerRef.current) return;
+            const x = e.touches[0].pageX - daysScrollerRef.current.offsetLeft;
+            const walk = (x - dragStartXRef.current) * 1;
+            daysScrollerRef.current.scrollLeft = scrollLeftRef.current - walk;
+          }}
+        >
+          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+            const isToday = day === now.getDate() && now.getMonth() === monthStart.getMonth() && now.getFullYear() === monthStart.getFullYear();
+            const isActive = selectedDay === day;
+            return (
+              <Button
+                key={day}
+                variant={isActive ? 'default' : 'outline'}
+                size="sm"
+                className={isToday ? 'border-primary' : undefined}
+                onClick={() => setSelectedDay(day)}
+              >
+                {day}
               </Button>
-            )}
-          </div>
-          </div>
+            );
+          })}
         </div>
       </div>
 
