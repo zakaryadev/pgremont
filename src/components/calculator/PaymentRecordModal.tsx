@@ -12,6 +12,7 @@ import { CustomerOrder } from '@/hooks/useCustomerOrders';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentRecords } from '@/hooks/usePaymentRecords';
 import { NumericFormat } from 'react-number-format';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PaymentRecord {
   id: string;
@@ -20,6 +21,7 @@ interface PaymentRecord {
   type: 'advance' | 'payment';
   description: string;
   paymentType?: 'cash' | 'click' | 'transfer';
+  status?: 'pending' | 'approved' | 'rejected';
 }
 
 interface PaymentRecordModalProps {
@@ -32,6 +34,7 @@ interface PaymentRecordModalProps {
 export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRecordModalProps) {
   const { toast } = useToast();
   const { savePaymentRecords, getPaymentRecords, deletePaymentRecord, loading } = usePaymentRecords();
+  const { user } = useAuth();
   const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>([]);
   const [newPayment, setNewPayment] = useState({
     amount: '',
@@ -79,7 +82,8 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
         date: record.paymentDate,
         type: record.paymentType,
         description: record.description,
-        paymentType: record.paymentMethod || 'cash' // Default to cash if not specified
+        paymentType: record.paymentMethod || 'cash', // Default to cash if not specified
+        status: record.status
       }));
 
       // Check if advance payment record already exists in database
@@ -93,7 +97,8 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
           date: order.createdAt.toISOString().split('T')[0],
           type: 'advance',
           description: 'Dastlabki avans to\'lovi',
-          paymentType: order.paymentType
+          paymentType: order.paymentType,
+          status: 'approved'
         };
         setPaymentRecords([existingAdvance]);
       } else if (!hasAdvanceRecord && order.advancePayment > 0) {
@@ -104,7 +109,8 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
           date: order.createdAt.toISOString().split('T')[0],
           type: 'advance',
           description: 'Dastlabki avans to\'lovi',
-          paymentType: order.paymentType
+          paymentType: order.paymentType,
+          status: 'approved'
         };
         setPaymentRecords([existingAdvance, ...modalRecords]);
       } else {
@@ -148,7 +154,8 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
       date: new Date().toISOString().split('T')[0],
       type: newPayment.type,
       description: newPayment.description || `${newPayment.type === 'advance' ? 'Avans' : 'To\'lov'} - ${new Date().toLocaleDateString('uz-UZ')}`,
-      paymentType: newPayment.paymentType
+      paymentType: newPayment.paymentType,
+      status: user?.role === 'manager' ? 'pending' : 'approved'
     };
 
     setPaymentRecords(prev => [...prev, payment]);
@@ -188,8 +195,10 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
   };
 
   const calculateTotals = () => {
-    const totalPaid = paymentRecords.reduce((sum, payment) => sum + payment.amount, 0);
-    const remaining = (order?.totalAmount || 0) - totalPaid;
+    const totalPaid = paymentRecords
+      .filter((p) => p.status !== 'pending' && p.status !== 'rejected')
+      .reduce((sum, payment) => sum + payment.amount, 0);
+    const remaining = Math.max(0, (order?.totalAmount || 0) - totalPaid);
     return { totalPaid, remaining };
   };
 
@@ -236,7 +245,7 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
       
       toast({
         title: "Muvaffaqiyatli saqlandi",
-        description: "To'lov qaydnomasi saqlandi",
+        description: user?.role === 'manager' ? "To'lov qaydnomasi saqlandi. Admin tasdiqlashi kutilmoqda." : "To'lov qaydnomasi saqlandi",
       });
       onClose();
     } catch (error) {
@@ -430,7 +439,7 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                       <div className="flex flex-col gap-1">
                         <Badge className={
                           payment.type === 'advance' 
@@ -449,6 +458,15 @@ export function PaymentRecordModal({ order, isOpen, onClose, onSave }: PaymentRe
                           {payment.paymentType === 'cash' ? 'NAQD' : 
                            payment.paymentType === 'click' ? 'CLICK' : 'PERECHESLENIYA'}
                         </Badge>
+                        {payment.status && (
+                          <Badge className={
+                            payment.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }>
+                            {payment.status === 'approved' ? 'Tasdiqlangan' : payment.status === 'pending' ? 'Kutilmoqda' : 'Rad etilgan'}
+                          </Badge>
+                        )}
                       </div>
                       {payment.id !== 'existing-advance' && (
                         <Button

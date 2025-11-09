@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface PaymentRecord {
   id: string;
@@ -9,6 +10,7 @@ export interface PaymentRecord {
   description: string;
   paymentDate: string;
   paymentMethod?: 'cash' | 'click' | 'transfer';
+  status?: 'pending' | 'approved' | 'rejected';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,6 +18,7 @@ export interface PaymentRecord {
 export function usePaymentRecords() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const savePaymentRecords = useCallback(async (orderId: string, paymentRecords: Omit<PaymentRecord, 'id' | 'orderId' | 'createdAt' | 'updatedAt'>[]) => {
     try {
@@ -37,13 +40,15 @@ export function usePaymentRecords() {
       }
       
       // Convert payment records to database format
+      const isManager = user?.role === 'manager';
       const recordsToInsert = paymentRecords.map(record => ({
         order_id: orderId,
         amount: record.amount,
         payment_type: record.paymentType,
         description: record.description,
         payment_date: record.paymentDate,
-        payment_method: record.paymentMethod || 'cash'
+        payment_method: record.paymentMethod || 'cash',
+        status: isManager ? 'pending' : 'approved'
       }));
 
       const { data, error: insertError } = await supabase
@@ -55,14 +60,11 @@ export function usePaymentRecords() {
         throw insertError;
       }
 
-      // Don't update advance_payment - it should remain as the original advance
-      // Only update remaining_balance based on total payments
-      const newPaymentTotal = paymentRecords.reduce((sum, record) => sum + record.amount, 0);
-      
-      // Get the current order to calculate remaining balance properly
+      // After inserting, recalculate remaining_balance from APPROVED records only
+      // Get the current order amounts
       const { data: currentOrderData, error: fetchError } = await supabase
         .from('customer_orders')
-        .select('total_amount, advance_payment')
+        .select('total_amount')
         .eq('id', orderId);
 
       if (fetchError) {
@@ -74,11 +76,28 @@ export function usePaymentRecords() {
       }
 
       const currentOrder = currentOrderData[0];
-
       const totalAmount = parseFloat((currentOrder as any).total_amount);
-      const originalAdvance = parseFloat((currentOrder as any).advance_payment);
-      const totalPaid = originalAdvance + newPaymentTotal;
-      const remainingBalance = Math.max(0, totalAmount - totalPaid);
+
+      // Sum approved payments (including approved advance)
+      const { data: approvedRecords, error: prErr } = await supabase
+        .from('payment_records')
+        .select('amount, payment_type, status')
+        .eq('order_id', orderId)
+        .eq('status', 'approved');
+      if (prErr) throw prErr;
+
+      const { approvedAdvance, approvedPayments } = (approvedRecords || []).reduce(
+        (acc: { approvedAdvance: number; approvedPayments: number }, r: any) => {
+          const amt = parseFloat(r.amount);
+          if (r.payment_type === 'advance') acc.approvedAdvance += amt;
+          else acc.approvedPayments += amt;
+          return acc;
+        },
+        { approvedAdvance: 0, approvedPayments: 0 }
+      );
+
+      const totalPaidApproved = approvedAdvance + approvedPayments;
+      const remainingBalance = Math.max(0, totalAmount - totalPaidApproved);
       
       const { error: updateError } = await supabase
         .from('customer_orders')
@@ -122,6 +141,7 @@ export function usePaymentRecords() {
         description: record.description,
         paymentDate: record.payment_date,
         paymentMethod: record.payment_method || 'cash',
+        status: (record as any).status,
         createdAt: new Date(record.created_at),
         updatedAt: new Date(record.updated_at)
       }));
@@ -155,11 +175,69 @@ export function usePaymentRecords() {
     }
   }, []);
 
+  const updatePaymentRecordStatus = useCallback(async (recordId: string, status: 'pending' | 'approved' | 'rejected') => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      // Update status
+      const { data, error: updateErr } = await supabase
+        .from('payment_records')
+        .update({ status } as any)
+        .eq('id', recordId)
+        .select('order_id')
+        .single();
+      if (updateErr) throw updateErr;
+
+      const orderId = (data as any)?.order_id;
+      if (orderId) {
+        // Recompute remaining balance from approved payments only
+        const { data: orderData, error: odErr } = await supabase
+          .from('customer_orders')
+          .select('total_amount')
+          .eq('id', orderId)
+          .single();
+        if (odErr) throw odErr;
+        const totalAmount = parseFloat((orderData as any).total_amount);
+
+        const { data: approvedRecords, error: prErr } = await supabase
+          .from('payment_records')
+          .select('amount, payment_type')
+          .eq('order_id', orderId)
+          .eq('status', 'approved');
+        if (prErr) throw prErr;
+
+        const totals = (approvedRecords || []).reduce(
+          (acc: { adv: number; pay: number }, r: any) => {
+            const amt = parseFloat(r.amount);
+            if (r.payment_type === 'advance') acc.adv += amt; else acc.pay += amt;
+            return acc;
+          },
+          { adv: 0, pay: 0 }
+        );
+
+        const remaining = Math.max(0, totalAmount - (totals.adv + totals.pay));
+        const { error: updErr2 } = await supabase
+          .from('customer_orders')
+          .update({ remaining_balance: remaining } as any)
+          .eq('id', orderId);
+        if (updErr2) throw updErr2;
+      }
+    } catch (err) {
+      console.error('Failed to update payment record status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update payment record status');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     error,
     savePaymentRecords,
     getPaymentRecords,
-    deletePaymentRecord
+    deletePaymentRecord,
+    updatePaymentRecordStatus,
   };
 }

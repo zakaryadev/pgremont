@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface CustomerOrder {
   id: string;
@@ -18,6 +19,7 @@ export function useCustomerOrders() {
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const loadOrders = useCallback(async () => {
     try {
@@ -31,7 +33,8 @@ export function useCustomerOrders() {
           *,
           payment_records (
             amount,
-            payment_type
+            payment_type,
+            status
           )
         `
         )
@@ -43,18 +46,20 @@ export function useCustomerOrders() {
 
       const formattedOrders: CustomerOrder[] = (data || []).map(
         (order: any) => {
-          const originalAdvance = parseFloat(order.advance_payment);
+          // Only count APPROVED payments
+          const approvedRecords = (order.payment_records || []).filter(
+            (r: any) => r.status === 'approved'
+          );
 
-          // faqat advance bo‘lmagan yozuvlarni hisoblash
-          const additionalPayments =
-            order.payment_records?.reduce((sum: number, record: any) => {
-              if (record.payment_type !== "advance") {
-                return sum + parseFloat(record.amount);
-              }
-              return sum;
-            }, 0) || 0;
+          const approvedAdvance = approvedRecords
+            .filter((r: any) => r.payment_type === 'advance')
+            .reduce((sum: number, r: any) => sum + parseFloat(r.amount), 0);
 
-          const totalPaid = originalAdvance + additionalPayments;
+          const approvedOtherPayments = approvedRecords
+            .filter((r: any) => r.payment_type !== 'advance')
+            .reduce((sum: number, r: any) => sum + parseFloat(r.amount), 0);
+
+          const totalPaid = approvedAdvance + approvedOtherPayments;
           const totalAmount = parseFloat(order.total_amount);
           const remainingBalance = Math.max(0, totalAmount - totalPaid);
 
@@ -65,7 +70,7 @@ export function useCustomerOrders() {
             description: order.description || undefined,
             totalAmount,
             paymentType: order.payment_type,
-            advancePayment: originalAdvance,
+            advancePayment: approvedAdvance,
             remainingBalance,
             createdAt: new Date(order.created_at),
             updatedAt: new Date(order.updated_at),
@@ -127,6 +132,7 @@ export function useCustomerOrders() {
         // If there's an advance payment, automatically create a payment record
         if (advancePayment > 0) {
           try {
+            const isManager = user?.role === 'manager';
             const paymentRecordData = {
               order_id: data.id,
               amount: advancePayment,
@@ -134,7 +140,8 @@ export function useCustomerOrders() {
               description: "Dastlabki avans to'lovi",
               payment_date: new Date().toISOString().split("T")[0],
               payment_method: paymentType,
-            };
+              status: isManager ? 'pending' : 'approved'
+            } as any;
 
             const { error: paymentRecordError } = await supabase
               .from("payment_records")

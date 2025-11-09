@@ -67,7 +67,8 @@ export function usePaymentAnalytics() {
       amount,
       payment_method,
       payment_date,
-      payment_type
+      payment_type,
+      status
     )
   `
         )
@@ -117,12 +118,13 @@ export function usePaymentAnalytics() {
         payment_records: Array<{
           amount: string;
           payment_type: string;
+          status?: string;
         }>;
       }
 
       const { data: allOrders, error: allOrdersError } = await supabase
         .from('customer_orders')
-        .select('id, total_amount, advance_payment, payment_records(amount, payment_type)');
+        .select('id, total_amount, advance_payment, payment_records(amount, payment_type, status)');
 
       if (allOrders) {
         (allOrders as unknown as CustomerOrder[]).forEach(order => {
@@ -130,9 +132,11 @@ export function usePaymentAnalytics() {
           const advancePayment = parseFloat(order.advance_payment) || 0;
           
           // Calculate total payments (excluding advance payment)
-          const payments = (order.payment_records || []).reduce((sum, record) => {
-            return record.payment_type === 'payment' ? sum + parseFloat(record.amount) : sum;
-          }, 0);
+          const payments = (order.payment_records || [])
+            .filter((record) => (record as any).status === 'approved')
+            .reduce((sum, record) => {
+              return record.payment_type === 'payment' ? sum + parseFloat(record.amount) : sum;
+            }, 0);
           
           const remainingBalance = Math.max(0, totalAmount - advancePayment - payments);
           analyticsData.totalDebt += remainingBalance;
@@ -174,10 +178,10 @@ export function usePaymentAnalytics() {
         analyticsData.totalRevenue += orderAmount;
 
         // Track payment methods from payment records
-        const paymentRecords = order.payment_records || [];
+        const paymentRecords = (order.payment_records || []).filter((r: any) => r.status === 'approved');
         const hasPaymentRecords = paymentRecords.length > 0;
 
-        // If there are payment records, use them to track payment methods
+        // If there are APPROVED payment records, use them to track payment methods
         if (hasPaymentRecords) {
           paymentRecords.forEach((record: any) => {
             const amount = parseFloat(record.amount);

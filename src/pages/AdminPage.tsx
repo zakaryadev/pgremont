@@ -1,41 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { UserManagement } from '../components/admin/UserManagement';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent } from '../components/ui/card';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { supabase } from '../integrations/supabase/client';
+import { PendingPayments } from '../components/admin/PendingPayments';
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    checkAdminStatus();
-  }, [user]);
-
-  const checkAdminStatus = async () => {
-    if (!user) {
-      setIsAdmin(false);
-      return;
-    }
-
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        setIsAdmin(user.email === 'admin@togogroup.com');
-      } else {
-        setIsAdmin(profile?.role === 'admin');
-      }
-    } catch (error) {
-      setIsAdmin(user.email === 'admin@togogroup.com');
-    }
-  };
+  const isAdmin = user?.role === 'admin';
 
   if (!isAdmin) {
     return (
@@ -75,6 +48,10 @@ export default function AdminPage() {
         </div>
 
         <UserManagement />
+
+        <div className="mt-6">
+          <PendingPayments />
+        </div>
       </div>
     </div>
   );

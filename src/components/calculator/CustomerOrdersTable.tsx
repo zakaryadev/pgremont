@@ -164,7 +164,7 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
   }, [orders, searchQuery, paymentTypeFilter, paymentStatusFilter, dateRange, selectedDay, monthStart, partialOnly, disableDefaultMonthRange]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
+    return new Intl.NumberFormat("uz-UZ").format(amount);
   };
 
   const formatDate = (date: Date) => {
@@ -178,6 +178,14 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
     return `${day}.${month}.${year}, ${time}`;
   };
 
+  // Table/Export uchun (Kunlik rasxodlardagi kabi faqat sana)
+  const formatDateOnly = (date: Date) => {
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
+
   const getPaymentTypeLabel = (type: string) => {
     switch (type) {
       case "cash":
@@ -185,7 +193,7 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
       case "click":
         return "CLICK";
       case "transfer":
-        return "PERECHESLENIYA";
+        return "PERECHESLENIYE";
       default:
         return type;
     }
@@ -314,7 +322,7 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
         'To\'lov turi': getPaymentTypeLabel(order.paymentType),
         'Avans': order.advancePayment,
         'Qoldiq': order.remainingBalance,
-        'Sana': formatDate(order.createdAt),
+        'Sana': formatDateOnly(order.createdAt),
         'ID': order.id,
       }));
 
@@ -717,21 +725,20 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
                     <TableHead>Mijoz</TableHead>
                     <TableHead>Tavsif</TableHead>
                     <TableHead className="hidden sm:table-cell">Telefon</TableHead>
-                    <TableHead>Jami summa</TableHead>
-                    <TableHead>To'lov turi</TableHead>
-                    <TableHead className="hidden sm:table-cell">Avans</TableHead>
-                    <TableHead>Qoldiq</TableHead>
-                    <TableHead className="hidden sm:table-cell">Sana</TableHead>
+                    <TableHead className="text-right">Jami summa</TableHead>
+                    <TableHead className="text-center">To'lov turi</TableHead>
+                    <TableHead className="hidden sm:table-cell text-right">Avans</TableHead>
+                    <TableHead className="text-right">Qoldiq</TableHead>
+                    <TableHead className="hidden sm:table-cell text-center">Sana</TableHead>
                     <TableHead className="text-right">Amallar</TableHead>
                   </TableRow>
-                  <TableRow className="bg-blue-500 text-white">
-                    <TableHead className="text-xs text-white uppercase">Jami</TableHead>
-                    <TableHead></TableHead>
+                  <TableRow className="bg-muted/50 font-semibold">
+                    <TableHead colSpan={2} className="text-right whitespace-nowrap">JAMI:</TableHead>
                     <TableHead className="hidden sm:table-cell"></TableHead>
-                    <TableHead className="font-semibold text-white whitespace-nowrap">{formatCurrency(totals.totalAmount)}</TableHead>
-                    <TableHead></TableHead>
-                    <TableHead className="hidden sm:table-cell text-white font-medium">{formatCurrency(totals.advancePayment)}</TableHead>
-                    <TableHead className="text-white font-medium">{formatCurrency(totals.remainingBalance)}</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">{formatCurrency(totals.totalAmount)}</TableHead>
+                    <TableHead className="whitespace-nowrap"></TableHead>
+                    <TableHead className="hidden sm:table-cell text-right whitespace-nowrap">{formatCurrency(totals.advancePayment)}</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">{formatCurrency(totals.remainingBalance)}</TableHead>
                     <TableHead className="hidden sm:table-cell"></TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -765,17 +772,17 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="font-semibold text-primary whitespace-nowrap">
+                      <TableCell className="text-right font-semibold whitespace-nowrap">
                         {formatCurrency(order.totalAmount)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <Badge
                           className={getPaymentTypeColor(order.paymentType)}
                         >
                           {getPaymentTypeLabel(order.paymentType)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell">
+                      <TableCell className="hidden sm:table-cell text-right">
                         {order.advancePayment > 0 ? (
                           <span className="text-green-600 font-medium">
                             {formatCurrency(order.advancePayment)}
@@ -784,31 +791,19 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-right">
                         {order.remainingBalance > 0 ? (
-                          <div className="flex flex-col">
-                            <span className="text-orange-600 font-medium">
-                              {formatCurrency(order.remainingBalance)}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              Qism to'langan
-                            </span>
-                          </div>
+                          <span className="text-orange-600 font-medium">
+                            {formatCurrency(order.remainingBalance)}
+                          </span>
                         ) : (
-                          <div className="flex flex-col">
-                            <span className="text-green-600 font-medium">
-                              To'liq to'langan
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatCurrency(order.totalAmount)}
-                            </span>
-                          </div>
+                          <span className="text-green-600 font-medium">To'liq to'langan</span>
                         )}
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell whitespace-nowrap">
-                        <div className="flex items-center gap-1 text-sm">
+                      <TableCell className="hidden sm:table-cell whitespace-nowrap text-center">
+                        <div className="inline-flex items-center justify-center gap-1 text-sm">
                           <Calendar className="h-3 w-3" />
-                          {formatDate(order.createdAt)}
+                          {formatDateOnly(order.createdAt)}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -861,14 +856,13 @@ export function CustomerOrdersTable({ onEditOrder, initialPaymentStatus = 'all',
                     </TableRow>
                   ))}
                   {/* Footer totals row */}
-                  <TableRow className="bg-blue-100">
-                    <TableCell className="font-semibold">JAMI</TableCell>
-                    <TableCell></TableCell>
+                  <TableRow className="bg-muted/50 font-semibold">
+                    <TableCell colSpan={2} className="text-right">JAMI:</TableCell>
                     <TableCell className="hidden sm:table-cell"></TableCell>
-                    <TableCell className="font-semibold text-primary whitespace-nowrap">{formatCurrency(totals.totalAmount)}</TableCell>
+                    <TableCell className="text-right whitespace-nowrap">{formatCurrency(totals.totalAmount)}</TableCell>
                     <TableCell></TableCell>
-                    <TableCell className="hidden sm:table-cell text-green-700 font-medium">{formatCurrency(totals.advancePayment)}</TableCell>
-                    <TableCell className="text-orange-700 font-medium">{formatCurrency(totals.remainingBalance)}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-right whitespace-nowrap">{formatCurrency(totals.advancePayment)}</TableCell>
+                    <TableCell className="text-right whitespace-nowrap">{formatCurrency(totals.remainingBalance)}</TableCell>
                     <TableCell className="hidden sm:table-cell"></TableCell>
                     <TableCell></TableCell>
                   </TableRow>
