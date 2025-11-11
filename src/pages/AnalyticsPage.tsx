@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,13 @@ import { usePaymentAnalytics, AnalyticsFilters } from '@/hooks/usePaymentAnalyti
 import { AnalyticsFiltersComponent } from '@/components/analytics/AnalyticsFiltersComponent';
 import { PaymentMethodPieChart } from '@/components/analytics/PaymentMethodPieChart';
 import { MonthlyRevenueBarChart } from '@/components/analytics/MonthlyRevenueBarChart';
+import { useDailyExpenses } from '@/hooks/useDailyExpenses';
+import { ExpenseMethodPieChart } from '@/components/analytics/ExpenseMethodPieChart';
 
 const AnalyticsPage = () => {
   const navigate = useNavigate();
   const { analytics, loading, error, fetchAnalytics } = usePaymentAnalytics();
+  const { items: expenses } = useDailyExpenses();
   
   const [filters, setFilters] = useState<AnalyticsFilters>({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Last 30 days
@@ -27,12 +30,49 @@ const AnalyticsPage = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('uz-UZ').format(amount) + ' so\'m';
+    return new Intl.NumberFormat('uz-UZ').format(Math.round(amount)) + ' so\'m';
   };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('uz-UZ');
   };
+
+  // Expense aggregates for selected date range
+  const expenseStats = useMemo(() => {
+    const start = new Date(filters.startDate);
+    const end = new Date(filters.endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const inRange = expenses.filter((e) => e.createdAt >= start && e.createdAt <= end);
+
+    const totals = inRange.reduce(
+      (acc, e) => {
+        acc.total += e.totalAmount;
+        if (e.paymentType === 'cash') acc.cash += e.totalAmount;
+        else if (e.paymentType === 'click') acc.click += e.totalAmount;
+        else if (e.paymentType === 'transfer') acc.transfer += e.totalAmount;
+        return acc;
+      },
+      { total: 0, cash: 0, click: 0, transfer: 0 }
+    );
+
+    return totals;
+  }, [expenses, filters.startDate, filters.endDate]);
+
+  const netProfit = useMemo(() => {
+    if (!analytics) return { total: 0, cash: 0, click: 0, transfer: 0 };
+    const revCash = analytics.paymentMethodStats.cash.amount;
+    const revClick = analytics.paymentMethodStats.click.amount;
+    const revTransfer = analytics.paymentMethodStats.transfer.amount;
+    const revTotal = revCash + revClick + revTransfer;
+
+    return {
+      total: revTotal - expenseStats.total,
+      cash: revCash - expenseStats.cash,
+      click: revClick - expenseStats.click,
+      transfer: revTransfer - expenseStats.transfer,
+    };
+  }, [analytics, expenseStats]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -104,21 +144,6 @@ const AnalyticsPage = () => {
                   </CardContent>
                 </Card>
 
-                {/* <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Jami Daromad</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(analytics.totalRevenue)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(filters.startDate)} - {formatDate(filters.endDate)}
-                    </p>
-                  </CardContent>
-                </Card> */}
-
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">NAQD Daromad</CardTitle>
@@ -165,6 +190,63 @@ const AnalyticsPage = () => {
                 </Card>
               </div>
 
+              {/* Net Profit Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Jami Foyda (Daromad - Rasxod)</CardTitle>
+                    <DollarSign className={`h-4 w-4 ${netProfit.total >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${netProfit.total >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      {formatCurrency(netProfit.total)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Rasxod: {formatCurrency(expenseStats.total)}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">NAQD Foyda</CardTitle>
+                    <DollarSign className={`h-4 w-4 ${netProfit.cash >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${netProfit.cash >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      {formatCurrency(netProfit.cash)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Daromad: {formatCurrency(analytics.paymentMethodStats.cash.amount)} · Rasxod: {formatCurrency(expenseStats.cash)}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">CLICK Foyda</CardTitle>
+                    <DollarSign className={`h-4 w-4 ${netProfit.click >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${netProfit.click >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                      {formatCurrency(netProfit.click)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Daromad: {formatCurrency(analytics.paymentMethodStats.click.amount)} · Rasxod: {formatCurrency(expenseStats.click)}</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">PERECHESLENIYA Foyda</CardTitle>
+                    <DollarSign className={`h-4 w-4 ${netProfit.transfer >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${netProfit.transfer >= 0 ? 'text-purple-700' : 'text-red-700'}`}>
+                      {formatCurrency(netProfit.transfer)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Daromad: {formatCurrency(analytics.paymentMethodStats.transfer.amount)} · Rasxod: {formatCurrency(expenseStats.transfer)}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 {/* Payment Methods Pie Chart */}
@@ -172,6 +254,16 @@ const AnalyticsPage = () => {
                 
                 {/* Monthly Revenue Bar Chart */}
                 <MonthlyRevenueBarChart monthlyStats={analytics.monthlyStats} />
+              </div>
+
+              {/* Expenses Pie Chart */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <ExpenseMethodPieChart expenseStats={{
+                  cash: { amount: expenseStats.cash },
+                  click: { amount: expenseStats.click },
+                  transfer: { amount: expenseStats.transfer },
+                  total: expenseStats.total,
+                }} />
               </div>
 
               {/* Daily Stats Table */}
