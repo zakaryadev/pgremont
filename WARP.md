@@ -63,7 +63,7 @@ Each calculator:
 **Custom Authentication (not Supabase Auth):**
 - Uses `AuthContext` with localStorage-based sessions
 - Two predefined users:
-  - **Admin**: Username: `Togo Group PRO`, Password: `togo0800`, Role: `admin`
+  - **Admin**: Username: `PG Remont PRO`, Password: `togo0800`, Role: `admin`
   - **Manager**: Username: `Manager`, Password: `togo0000`, Role: `manager`
 - All routes are protected via `ProtectedRoute` component
 - No registration - only predefined credentials work

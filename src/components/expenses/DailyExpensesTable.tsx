@@ -735,20 +735,7 @@ export const DailyExpensesTable: React.FC<DailyExpensesTableProps> = ({ onlyWith
             <div className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="exp-name">Rasxod nomi</Label>
-                <div className="flex flex-wrap gap-2 mb-2 max-w-full">
-                  {quickExpenseNames.map((label) => (
-                    <Button
-                      key={label}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditing({ ...editing, name: label })}
-                      className="rounded-full h-7 px-3 text-xs whitespace-nowrap"
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
+               
                 <Input
                   id="exp-name"
                   value={editing.name}

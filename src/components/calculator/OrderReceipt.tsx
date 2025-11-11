@@ -307,7 +307,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
           <div className="receipt-logo">
             <img
               src="/logo_chek.png"
-              alt="TOGO GROUP Logo"
+              alt="PG Remont Logo"
               className="receipt-logo-img"
             />
           </div>

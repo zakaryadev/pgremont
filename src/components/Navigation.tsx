@@ -18,24 +18,6 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
   const { user, signOut } = useAuth();
   const calculators = [
     {
-      id: 'polygraphy',
-      name: 'Poligrafiya',
-      description: 'Banner, orakal, holst va boshqa bosma ishlar',
-      icon: '🖨️'
-    },
-    {
-      id: 'tablets',
-      name: 'Tablichkalar',
-      description: 'Romark, orgsteklo, akril tablichkalar, beydjik, statuetka va boltlar',
-      icon: '📋'
-    },
-    {
-      id: 'letters',
-      name: 'Bukvalar',
-      description: 'Korob va harflar',
-      icon: '🔤'
-    },
-    {
       id: 'other-services',
       name: 'Boshqa xizmatlar',
       description: 'Mijoz ma\'lumotlari, to\'lov va buyurtma boshqaruvi',
@@ -77,7 +59,7 @@ export function Navigation({ activeCalculator, onCalculatorChange }: NavigationP
         <div className="flex flex-col items-center mb-4">
           <img 
             src="/logo.png" 
-            alt="TOGO GROUP Logo" 
+            alt="PG Remont Logo" 
             className="h-16 md:h-20 w-auto mb-4"
           />
         </div>

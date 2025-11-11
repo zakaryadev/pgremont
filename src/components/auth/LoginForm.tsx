@@ -9,13 +9,13 @@ import { useToast } from '../../hooks/use-toast';
 // Predefined users for selection
 const USERS = [
   {
-    name: 'Togo Group PRO',
-    password: 'togo0800',
+    name: 'PG Remont',
+    password: 'pgremont0800',
     role: 'admin'
   },
   {
     name: 'Manager',
-    password: 'togo0000',
+    password: 'pgremont0000',
     role: 'manager'
   }
 ];

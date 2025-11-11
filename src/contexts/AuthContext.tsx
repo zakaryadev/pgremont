@@ -9,17 +9,17 @@ interface CustomUser {
 
 // Predefined users
 const PREDEFINED_USERS = {
-  'Togo Group PRO': {
-    id: 'togo-pro',
-    name: 'Togo Group PRO',
+  'PG Remont': {
+    id: 'pgremont',
+    name: 'PG Remont',
     role: 'admin' as const,
-    password: 'togo0800'
+    password: 'pgremont0800'
   },
   'Manager': {
     id: 'manager',
     name: 'Manager',
     role: 'manager' as const,
-    password: 'togo0000'
+    password: 'pgremont0000'
   }
 };
 

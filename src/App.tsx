@@ -7,9 +7,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PWAInstaller } from "./components/PWAInstaller";
 import Index from "./pages/Index";
-import PolygraphyPage from "./pages/PolygraphyPage";
-import TabletsPage from "./pages/TabletsPage";
-import LettersPage from "./pages/LettersPage";
 import OtherServicesPage from "./pages/OtherServicesPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import AdminPage from "./pages/AdminPage";
@@ -35,21 +32,6 @@ const App = () => {
             <Route path="/" element={
               <ProtectedRoute>
                 <Index />
-              </ProtectedRoute>
-            } />
-            <Route path="/polygraphy" element={
-              <ProtectedRoute>
-                <PolygraphyPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/tablets" element={
-              <ProtectedRoute>
-                <TabletsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/letters" element={
-              <ProtectedRoute>
-                <LettersPage />
               </ProtectedRoute>
             } />
             <Route path="/other-services" element={

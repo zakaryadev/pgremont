@@ -33,10 +33,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           <div className="mb-8">
             <img 
               src="/logo.png" 
-              alt="TOGO GROUP Logo" 
+              alt="PG Remont Logo" 
               className="h-16 md:h-20 w-auto mx-auto mb-4"
             />
-            <h1 className="text-2xl font-bold mb-2">TOGO GROUP</h1>
+            <h1 className="text-2xl font-bold mb-2">PG Remont</h1>
             <p className="text-muted-foreground mb-6">
               Tizimga kirish uchun login va parolingizni kiriting
             </p>
